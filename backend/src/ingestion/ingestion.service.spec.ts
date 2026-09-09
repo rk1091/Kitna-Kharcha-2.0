@@ -14,19 +14,9 @@ describe('IngestionService', () => {
   let service: IngestionService;
   let prisma: PrismaService;
 
-  beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        IngestionService,
-        {
-          provide: PrismaService,
-          useValue: mockPrismaService,
-        },
-      ],
-    }).compile();
-
-    service = module.get<IngestionService>(IngestionService);
-    prisma = module.get<PrismaService>(PrismaService);
+  beforeEach(() => {
+    prisma = mockPrismaService as unknown as PrismaService;
+    service = new IngestionService(prisma);
   });
 
   afterEach(() => {

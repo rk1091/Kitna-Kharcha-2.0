@@ -12,18 +12,8 @@ const mockIngestionService = {
 describe('IngestionController', () => {
   let controller: IngestionController;
 
-  beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
-      controllers: [IngestionController],
-      providers: [
-        {
-          provide: IngestionService,
-          useValue: mockIngestionService,
-        },
-      ],
-    }).compile();
-
-    controller = module.get<IngestionController>(IngestionController);
+  beforeEach(() => {
+    controller = new IngestionController(mockIngestionService as unknown as IngestionService);
   });
 
   afterEach(() => {
