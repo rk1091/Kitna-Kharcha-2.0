@@ -95,6 +95,7 @@ model Transaction {
   duplicateOfId            String?
   recurringGroupId         String?
   tags                     String[]             @default([])
+  fingerprint              String?
 
   createdAt                DateTime             @default(now())
   updatedAt                DateTime             @updatedAt
@@ -104,6 +105,7 @@ model Transaction {
   @@index([txnDate])
   @@index([merchantId])
   @@index([recurringGroupId])
+  @@index([fingerprint])
 }
 
 enum Direction {
