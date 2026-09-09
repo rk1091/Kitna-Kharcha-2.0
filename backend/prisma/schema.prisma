@@ -1,0 +1,254 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String    @id @default(cuid())
+  email           String    @unique
+  passwordHash    String
+  name            String?
+  defaultCurrency String    @default("INR")
+  preferences     Json?
+  encryptionSalt  String
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  statements      StatementUpload[]
+  rules           ClassificationRule[]
+  budgets         Budget[]
+  copilotSessions CopilotSession[]
+  merchants       UserMerchant[]
+}
+
+model StatementUpload {
+  id                   String      @id @default(cuid())
+  userId               String
+  user                 User        @relation(fields: [userId], references: [id])
+  fileName             String
+  filePath             String
+  inputType            InputType   @default(PDF)
+  uploadedAt           DateTime    @default(now())
+  parseStatus          ParseStatus @default(PENDING)
+  bankName             String?
+  statementPeriodStart DateTime?
+  statementPeriodEnd   DateTime?
+  contentFingerprint   String?
+  maskingReport        Json?
+  encryptedMaskMap     String?
+  healthScore          Float?
+  errorMessage         String?
+
+  transactions         Transaction[]
+  parseLogs            ParseLog[]
+
+  @@index([userId])
+  @@index([contentFingerprint])
+}
+
+enum InputType {
+  PDF
+  TEXT
+  CSV
+  EXCEL
+}
+
+enum ParseStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  PARTIAL
+}
+
+model Transaction {
+  id                       String               @id @default(cuid())
+  statementId              String
+  statement                StatementUpload      @relation(fields: [statementId], references: [id], onDelete: Cascade)
+  txnDate                  DateTime
+  description              String
+  maskedDescription        String
+  normalizedDescription    String
+  reference                String?
+  debitAmount              Decimal?             @db.Decimal(15, 2)
+  creditAmount             Decimal?             @db.Decimal(15, 2)
+  balance                  Decimal?             @db.Decimal(15, 2)
+  amountSigned             Decimal              @db.Decimal(15, 2)
+  currency                 String               @default("INR")
+  direction                Direction
+
+  categoryId               String?
+  category                 Category?            @relation(fields: [categoryId], references: [id])
+  autoCategoryId           String?
+  isManualOverride         Boolean              @default(false)
+  classificationReason     ClassificationReason @default(FALLBACK_UNCATEGORIZED)
+  classificationConfidence Float?
+
+  merchantId               String?
+  merchant                 UserMerchant?        @relation(fields: [merchantId], references: [id])
+
+  isDuplicate              Boolean              @default(false)
+  duplicateOfId            String?
+  recurringGroupId         String?
+  tags                     String[]             @default([])
+
+  createdAt                DateTime             @default(now())
+  updatedAt                DateTime             @updatedAt
+
+  @@index([statementId])
+  @@index([categoryId])
+  @@index([txnDate])
+  @@index([merchantId])
+  @@index([recurringGroupId])
+}
+
+enum Direction {
+  DEBIT
+  CREDIT
+}
+
+enum ClassificationReason {
+  EXACT_KEYWORD
+  REGEX_MATCH
+  COMPOUND_RULE
+  LLM_CLASSIFIED
+  MANUAL_OVERRIDE
+  FALLBACK_UNCATEGORIZED
+}
+
+model Category {
+  id           String        @id @default(cuid())
+  name         String        @unique
+  type         CategoryType
+  color        String?
+  icon         String?
+  transactions Transaction[]
+  rules        ClassificationRule[]
+}
+
+enum CategoryType {
+  EXPENSE
+  INCOME
+  NEUTRAL
+}
+
+model ClassificationRule {
+  id          String      @id @default(cuid())
+  userId      String?
+  user        User?       @relation(fields: [userId], references: [id])
+  name        String
+  conditions  Json
+  categoryId  String
+  category    Category    @relation(fields: [categoryId], references: [id])
+  tags        String[]    @default([])
+  priority    Int         @default(0)
+  isActive    Boolean     @default(true)
+  isSystem    Boolean     @default(false)
+  source      RuleSource  @default(SYSTEM)
+  hitCount    Int         @default(0)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@index([priority])
+  @@index([userId])
+}
+
+enum RuleSource {
+  SYSTEM
+  USER
+  AI_LEARNED
+}
+
+model UserMerchant {
+  id            String        @id @default(cuid())
+  userId        String
+  user          User          @relation(fields: [userId], references: [id])
+  name          String
+  aliases       String[]      @default([])
+  serviceType   String?
+  transactions  Transaction[]
+
+  @@unique([userId, name])
+}
+
+model RecurringGroup {
+  id            String          @id @default(cuid())
+  userId        String
+  merchantId    String?
+  categoryId    String?
+  type          RecurringType
+  frequency     RecurringFreq
+  avgAmount     Decimal         @db.Decimal(15, 2)
+  currency      String          @default("INR")
+  lastSeenDate  DateTime
+  isActive      Boolean         @default(true)
+
+  @@index([userId])
+}
+
+enum RecurringType {
+  SUBSCRIPTION
+  EMI
+  SALARY
+  UTILITY
+  REGULAR_EXPENSE
+}
+
+enum RecurringFreq {
+  WEEKLY
+  MONTHLY
+  QUARTERLY
+  ANNUAL
+}
+
+model Budget {
+  id          String       @id @default(cuid())
+  userId      String
+  user        User         @relation(fields: [userId], references: [id])
+  categoryId  String
+  amount      Decimal      @db.Decimal(15, 2)
+  currency    String       @default("INR")
+  period      BudgetPeriod
+  isActive    Boolean      @default(true)
+  createdBy   String       @default("USER")
+  createdAt   DateTime     @default(now())
+
+  @@unique([userId, categoryId, period])
+}
+
+enum BudgetPeriod {
+  WEEKLY
+  MONTHLY
+}
+
+model CopilotSession {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id])
+  messages  Json
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model ParseLog {
+  id          String          @id @default(cuid())
+  statementId String
+  statement   StatementUpload @relation(fields: [statementId], references: [id], onDelete: Cascade)
+  level       LogLevel
+  message     String
+  rawLine     String?
+  createdAt   DateTime        @default(now())
+
+  @@index([statementId])
+}
+
+enum LogLevel {
+  INFO
+  WARN
+  ERROR
+  DEBUG
+}
