@@ -44,6 +44,32 @@ export class PersonalStrategy implements MaskingStrategy {
       });
     }
 
+    // Basic Address heuristic: Looks for common address prefixes followed by text and a 6-digit PIN code
+    const addressRegex = /\b(?:House|H\.No|Plot|Flat|Apt|Apartment|Street|Road|Nagar|Block|Phase|Estate)[\s\S]{10,200}?\b[1-9][0-9]{5}\b/gi;
+    while ((match = addressRegex.exec(text)) !== null) {
+      matches.push({
+        start: match.index,
+        end: match.index + match[0].length,
+        type: PIIType.ADDRESS,
+        originalText: match[0],
+        maskedText: '[ADDRESS_REDACTED]',
+        confidence: 0.85,
+      });
+    }
+
+    // Fallback: If just a naked PIN code with a state (like GURGAON 122009 HAR) is found, mask it
+    const pinRegex = /\b[A-Z]{3,20}\s+[1-9][0-9]{5}\s+[A-Z]{2,3}\b/gi;
+    while ((match = pinRegex.exec(text)) !== null) {
+      matches.push({
+        start: match.index,
+        end: match.index + match[0].length,
+        type: PIIType.ADDRESS,
+        originalText: match[0],
+        maskedText: '[PINCODE_REDACTED]',
+        confidence: 0.80,
+      });
+    }
+
     return matches;
   }
 }

@@ -44,6 +44,45 @@ export class FinancialStrategy implements MaskingStrategy {
       });
     }
 
+    // GSTIN regex: 2 digits + 5 chars + 4 digits + 1 char + 1 digit/char + Z + 1 digit/char
+    const gstinRegex = /\b[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}\b/g;
+    while ((match = gstinRegex.exec(text)) !== null) {
+      matches.push({
+        start: match.index,
+        end: match.index + match[0].length,
+        type: PIIType.GSTIN,
+        originalText: match[0],
+        maskedText: '[GSTIN]',
+        confidence: 0.99,
+      });
+    }
+
+    // Credit Card regex: 16 digits (can be spaced like XXXX XXXX XXXX XXXX)
+    const ccRegex = /\b(?:\d{4}[\s-]?){3}\d{4}\b/g;
+    while ((match = ccRegex.exec(text)) !== null) {
+      matches.push({
+        start: match.index,
+        end: match.index + match[0].length,
+        type: PIIType.CREDIT_CARD,
+        originalText: match[0],
+        maskedText: '[CREDIT_CARD]',
+        confidence: 0.95,
+      });
+    }
+
+    // Card Product Type Redaction (Protects User's Card Tier Privacy)
+    const cardTypeRegex = /\b(?:MoneyBack\+?|Millennia|Regalia|Infinia|Diners Club|SimplyCLICK|SimplySAVE|Amazon Pay|Flipkart Axis)\b/gi;
+    while ((match = cardTypeRegex.exec(text)) !== null) {
+      matches.push({
+        start: match.index,
+        end: match.index + match[0].length,
+        type: PIIType.CREDIT_CARD, // Reusing CREDIT_CARD type for card products
+        originalText: match[0],
+        maskedText: '[CARD_TIER_REDACTED]',
+        confidence: 0.90,
+      });
+    }
+
     return matches;
   }
 }

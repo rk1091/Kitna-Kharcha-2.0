@@ -31,8 +31,19 @@ Your task is to extract transactions into structured JSON format.
 Calculate the healthScore (0-100) based on how well you could parse the text (100 = perfectly).
 Return warnings if any lines looked like transactions but could not be parsed.`;
 
+    // SMART FILTER: PDFs often contain thousands of lines of useless Terms & Conditions, 
+    // headers, and marketing fluff. Sending this to an LLM wastes massive amounts of tokens.
+    // We will filter the text to only include lines that are likely to contain transaction data.
+    const compressedText = text
+      .split('\n')
+      .map(line => line.trim())
+      // Keep lines that have at least one digit (transactions always have dates/amounts)
+      // And ignore massive paragraphs (T&Cs)
+      .filter(line => /\d/.test(line) && line.length > 5 && line.length < 200)
+      .join('\n');
+
     const result = await this.llmService.generateStructured({
-      prompt: `Please parse this bank statement text:\n\n${text}`,
+      prompt: `Please parse this bank statement text:\n\n${compressedText}`,
       systemInstruction,
       schema: ParseResultSchema,
     });

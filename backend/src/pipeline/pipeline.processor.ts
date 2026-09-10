@@ -25,9 +25,9 @@ export class PipelineProcessor extends WorkerHost {
     super();
   }
 
-  async process(job: Job<{ uploadId: string }, void, string>): Promise<void> {
-    const { uploadId } = job.data;
-    
+  async process(job: Job<any, void, string>): Promise<void> {
+    const uploadId = job.data.uploadId || job.data.statementId;
+    this.logger.log(`Processing statement uploadId=${uploadId}`);
     // 1. Fetch upload
     const statement = await this.prisma.statementUpload.findUnique({
       where: { id: uploadId },
@@ -39,11 +39,47 @@ export class PipelineProcessor extends WorkerHost {
     }
 
     try {
-      // 2. Read file (stubbed)
-      const fileContent = 'Simulated content';
+      // 2. Read file
+      const fs = require('fs');
+      let fileContent = '';
+      
+      if (statement.inputType === 'PDF') {
+        const pdf = require('pdf-parse');
+        const buffer = fs.readFileSync(statement.filePath);
+        const data = await pdf(buffer);
+        fileContent = data.text;
+      } else {
+        fileContent = fs.readFileSync(statement.filePath, 'utf-8');
+      }
+
+      // 2.5 Deduplication Check (Smart Cache)
+      const crypto = require('crypto');
+      const fileHash = crypto.createHash('sha256').update(fileContent).digest('hex');
+      
+      const existingUpload = await this.prisma.statementUpload.findFirst({
+        where: { 
+          userId: statement.userId, 
+          contentFingerprint: fileHash, 
+          parseStatus: 'COMPLETED' 
+        }
+      });
+
+      if (existingUpload) {
+        this.logger.warn(`Duplicate statement detected (Hash: ${fileHash}). Skipping LLM call to save credits!`);
+        await this.prisma.statementUpload.update({
+          where: { id: statement.id },
+          data: { 
+            parseStatus: 'COMPLETED', 
+            errorMessage: 'Duplicate statement. Skipped processing to save API credits.',
+            contentFingerprint: fileHash 
+          },
+        });
+        return; // Exit early!
+      }
 
       // 3. Masking
       const maskResult = await this.maskingService.mask(fileContent);
+      this.logger.log('\n\n=== FULLY MASKED TEXT PREPARED FOR PIPELINE ===\n' + maskResult.maskedText + '\n===============================================\n\n');
 
       // 4. Parsing
       const parseResult = await this.parserService.parse(maskResult.maskedText);
@@ -69,12 +105,12 @@ export class PipelineProcessor extends WorkerHost {
           amountSigned: direction === Direction.CREDIT ? parsedTxn.amount : -parsedTxn.amount,
         };
 
-        const isDup = await this.dedupService.isDuplicate(partialTxn, statement.userId, statement.bankName || undefined);
+        const isDup = await this.dedupService.isDuplicate(partialTxn as any, statement.userId, statement.bankName || undefined);
         
         const currency = this.currencyService.detectCurrency(parsedTxn.description);
         const baseAmount = await this.currencyService.convertToBase(parsedTxn.amount, currency, statement.user.defaultCurrency);
 
-        const classResult = await this.classificationService.classify(partialTxn as unknown as Transaction, rules, categories);
+        const classResult = await this.classificationService.classify(partialTxn as any, rules as any[], categories);
 
         // Save to DB
         await this.prisma.transaction.create({
@@ -101,7 +137,11 @@ export class PipelineProcessor extends WorkerHost {
 
       await this.prisma.statementUpload.update({
         where: { id: statement.id },
-        data: { parseStatus: 'COMPLETED', healthScore: parseResult.healthScore },
+        data: { 
+          parseStatus: 'COMPLETED', 
+          healthScore: parseResult.healthScore,
+          contentFingerprint: fileHash 
+        },
       });
 
     } catch (error) {

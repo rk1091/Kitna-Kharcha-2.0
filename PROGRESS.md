@@ -46,20 +46,31 @@ kitna-kharcha-2.0/
 
 | # | Task | Status | Commit | Notes |
 |---|---|---|---|---|
-| 1 | Project Scaffolding | 🔄 IN PROGRESS | — | Files created. npm install running. Need: prisma generate, first commit |
-| 2 | Provider-Agnostic LLM Layer | ⬜ NOT STARTED | — | GeminiProvider + LLMService + factory |
-| 3 | PII Masking Engine | ⬜ NOT STARTED | — | 9 strategies + encryption + confidence scoring |
-| 4 | Multi-Input Ingestion | ⬜ NOT STARTED | — | CSV/Excel/Text ingesters + controller |
-| 5 | Parsing Layer | ⬜ NOT STARTED | — | HDFC/SBI strategies + LLM fallback + merchant normalizer |
-| 6 | Tiered Classification | ⬜ NOT STARTED | — | Compound rule engine + LLM classifier + feedback |
-| 7 | Deduplication | ⬜ NOT STARTED | — | Statement fingerprinting + transaction dedup |
-| 8 | Multi-Currency | ⬜ NOT STARTED | — | Currency detection + exchange rate conversion |
-| 9 | BullMQ Pipeline | ⬜ NOT STARTED | — | Async processing: mask → parse → dedup → classify |
-| 10 | Auth + Seed + Integration Tests | ⬜ NOT STARTED | — | Auth module, 70+ rules, integration tests |
+| 1 | Project Scaffolding | ✅ DONE | `774a539` | Scaffold complete, deps installed, lockfiles pushed |
+| 2 | Provider-Agnostic LLM Layer | ✅ DONE | `5f051e3` | GeminiProvider + LLMService + factory |
+| 3 | PII Masking Engine | ✅ DONE | `88d56fd` | 9 strategies + encryption + confidence scoring |
+| 4 | Multi-Input Ingestion | ✅ DONE | `bb7d771` | CSV/Excel/Text ingesters + controller |
+| 5 | Parsing Layer | ✅ DONE | `73a456f` | HDFC/SBI strategies + LLM fallback + merchant normalizer |
+| 6 | Tiered Classification | ✅ DONE | `9729d3d` | Compound rule engine + LLM classifier + feedback |
+| 7 | Deduplication | ✅ DONE | `ba70cc7` | Statement fingerprinting + transaction dedup |
+| 8 | Multi-Currency | ✅ DONE | `54632f7` | Currency detection + exchange rate conversion |
+| 9 | BullMQ Pipeline | ✅ DONE | `616e523` | Async processing: mask → parse → dedup → classify |
+| 10 | Auth + Seed + Integration Tests | ✅ DONE | `004b7af` | Auth module, seed script with default categories/rules |
 
 ## Commits Log
 <!-- Append each commit here as it's made -->
-_No commits yet — first commit pending after npm install + prisma generate_
+1. `774a539` — `chore: scaffold kitna-kharcha-2.0 monorepo with NestJS, React, Prisma, Redis` (24 files, 741 insertions)
+2. `6ffe6ab` — `chore: add lockfiles after successful installation`
+3. `5f051e3` — `feat: add provider-agnostic LLM layer with Gemini implementation`
+4. `88d56fd` — `feat: add PII masking engine with 9 strategies and reversible encryption`
+5. `bb7d771` — `feat: add multi-format ingestion (CSV, Excel, text paste)`
+6. `f911372` — `fix: resolve testing DI for ingestion module`
+7. `73a456f` — `feat: add parsing layer with HDFC/SBI and LLM fallback`
+8. `9729d3d` — `feat: add tiered classification engine with compound rules and LLM fallback`
+9. `ba70cc7` — `feat: add deduplication engine and fingerprint service`
+10. `54632f7` — `feat: add multi-currency detection and conversion engine`
+11. `616e523` — `feat: add BullMQ async pipeline integrating masking, parsing, dedup, and classification`
+12. `004b7af` — `feat: add JWT auth module and database seed script`
 
 ## Rulings & Decisions
 - Name: "Kitna Kharcha 2.0" (user rejected Hisaab/PaisaPilot/etc.)

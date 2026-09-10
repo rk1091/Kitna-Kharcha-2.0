@@ -52,6 +52,20 @@ export class BankingStrategy implements MaskingStrategy {
       }
     }
 
+    // Credit Limit regex
+    const limitRegex = /(?:credit limit|cr limit|available credit|limit)[\s.:]*(?:rs|inr)?[\s]*([\d,]+(?:\.\d{1,2})?)/gi;
+    while ((match = limitRegex.exec(text)) !== null) {
+      const valueIndex = match[0].indexOf(match[1]);
+      matches.push({
+        start: match.index + valueIndex,
+        end: match.index + valueIndex + match[1].length,
+        type: PIIType.CREDIT_LIMIT,
+        originalText: match[1],
+        maskedText: '[CREDIT_LIMIT]',
+        confidence: 0.90,
+      });
+    }
+
     return matches;
   }
 }

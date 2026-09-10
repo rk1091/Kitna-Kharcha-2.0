@@ -14,7 +14,7 @@ export class HdfcStrategy implements BankParserStrategy {
     
     // Simple regex for HDFC (example format: "DD/MM/YY  Description  Amount")
     // Assuming format: Date (DD/MM/YY), Description, Ref No, Value Date, Withdrawal(Dr), Deposit(Cr), Balance
-    const regex = /^(\d{2}\/\d{2}\/\d{2,4})\s+(.+?)\s+([0-9.,]+)\s+(Cr|Dr|CR|DR)?\s+([0-9.,]+)?$/i;
+    const regex = /^(\d{2}\/\d{2}\/\d{2,4})\s+(.+?)\s+([0-9.,]+)\s+(Cr|Dr|CR|DR)?(?:\s+([0-9.,]+))?$/i;
 
     for (const line of lines) {
       if (line.includes('Date') || line.includes('Balance')) continue;

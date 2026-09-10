@@ -8,6 +8,10 @@ export enum PIIType {
   UPI_ID = 'UPI_ID',
   BALANCE = 'BALANCE',
   BENEFICIARY = 'BENEFICIARY',
+  GSTIN = 'GSTIN',
+  CREDIT_CARD = 'CREDIT_CARD',
+  CREDIT_LIMIT = 'CREDIT_LIMIT',
+  ADDRESS = 'ADDRESS',
 }
 
 export interface MaskMatch {

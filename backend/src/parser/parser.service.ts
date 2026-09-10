@@ -27,7 +27,7 @@ export class ParserService {
           this.logger.warn(`Strategy ${strategy.constructor.name} returned low health score: ${result.healthScore}`);
         }
       } catch (error) {
-        this.logger.warn(`Strategy ${strategy.constructor.name} failed with error: ${error.message}`);
+        this.logger.warn(`Strategy ${strategy.constructor.name} failed with error: ${(error as Error).message}`);
       }
     }
 

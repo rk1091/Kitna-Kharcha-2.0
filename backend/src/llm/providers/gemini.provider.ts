@@ -33,7 +33,7 @@ export class GeminiProvider implements LLMProvider {
   async generateStructured<T extends z.ZodTypeAny>(options: GenerateStructuredOptions<T>): Promise<z.infer<T>> {
     const { prompt, schema, systemInstruction, temperature, maxOutputTokens, model } = options;
     
-    const jsonSchema = zodToJsonSchema(schema, { target: 'jsonSchema7' });
+    const jsonSchema = zodToJsonSchema(schema as any, { target: 'jsonSchema7' }) as any;
     
     // Remove unsupported fields that zodToJsonSchema might add which Gemini doesn't like
     if (jsonSchema.$schema) delete (jsonSchema as any).$schema;
@@ -47,16 +47,30 @@ export class GeminiProvider implements LLMProvider {
     if (temperature !== undefined) config.temperature = temperature;
     if (maxOutputTokens !== undefined) config.maxOutputTokens = maxOutputTokens;
 
+    console.log('\n================ LLM REQUEST (STRUCTURED) ================');
+    console.log('Model:', model || this.defaultModel);
+    console.log('System Instruction:', systemInstruction || 'None');
+    console.log('Prompt:', prompt);
+    console.log('Expected Schema Keys:', Object.keys(jsonSchema.properties || {}));
+    console.log('==========================================================\n');
+
+    // Save the exact prompt to a file so the user can read it cleanly (bypassing terminal encoding issues)
+    require('fs').writeFileSync('last-llm-prompt.txt', prompt);
+
     const response = await this.genAI.models.generateContent({
       model: model || this.defaultModel,
       contents: prompt,
       config,
     });
 
-    const text = response.text;
+    const text = response.text || '';
     if (!text) {
       throw new Error('No text returned from Gemini API');
     }
+
+    console.log('\n================ LLM RESPONSE (STRUCTURED) ================');
+    console.log(text);
+    console.log('===========================================================\n');
 
     const parsed = JSON.parse(text);
     return schema.parse(parsed);
@@ -89,7 +103,7 @@ export class GeminiProvider implements LLMProvider {
     if (response.functionCalls && Array.isArray(response.functionCalls)) {
       for (const call of response.functionCalls) {
         toolCalls.push({
-          name: call.name,
+          name: call.name || 'unknown_tool',
           arguments: call.args,
         });
       }

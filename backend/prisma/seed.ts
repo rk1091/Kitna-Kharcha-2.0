@@ -31,7 +31,7 @@ async function main() {
     { name: 'Salary', type: 'INCOME' as const },
   ];
 
-  const categories = {};
+  const categories: Record<string, string> = {};
   for (const cat of categoriesData) {
     const category = await prisma.category.upsert({
       where: { name: cat.name },
