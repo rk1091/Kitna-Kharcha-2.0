@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import axios from 'axios';
-import { LayoutDashboard, Receipt, Tag, Settings, CreditCard, UploadCloud, RefreshCw, X } from 'lucide-react';
+import { LayoutDashboard, Receipt, Tag, Settings, CreditCard, UploadCloud, RefreshCw, X, MessageSquare } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -40,6 +40,12 @@ export default function App() {
   const [editCategoryId, setEditCategoryId] = useState<string>('');
   const [editTags, setEditTags] = useState<string[]>([]);
   const [newTagInput, setNewTagInput] = useState('');
+
+  // Copilot Chat State
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatMessages, setChatMessages] = useState<{role: 'user'|'ai', content: string}[]>([]);
+  const [chatInput, setChatInput] = useState('');
+  const [chatLoading, setChatLoading] = useState(false);
 
   const fetchTransactions = () => {
     setLoading(true);
@@ -85,8 +91,8 @@ export default function App() {
           const pollInterval = setInterval(() => {
             fetchTransactions();
             attempts++;
-            if (attempts >= 4) clearInterval(pollInterval);
-          }, 4000); // Poll 4 times, every 4 seconds (16s total)
+            if (attempts >= 15) clearInterval(pollInterval);
+          }, 3000); // Poll 15 times, every 3 seconds (45s total) to wait for LLM
           return 'Uploaded! AI is parsing. Auto-refreshing dashboard...';
         },
         error: 'Failed to upload statement',
@@ -468,6 +474,92 @@ export default function App() {
           </div>
         </main>
       </div>
+
+      {/* Floating Copilot Chat */}
+      <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end">
+        {chatOpen && (
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl rounded-2xl w-80 h-96 mb-4 flex flex-col overflow-hidden animate-in slide-in-from-bottom-5">
+            <div className="bg-indigo-600 p-4 text-white flex justify-between items-center">
+              <div className="flex items-center space-x-2">
+                <MessageSquare className="w-5 h-5" />
+                <span className="font-bold">AI Copilot</span>
+              </div>
+              <button onClick={() => setChatOpen(false)} className="text-indigo-200 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50 dark:bg-slate-950">
+              {chatMessages.length === 0 && (
+                <div className="text-center text-slate-500 text-sm mt-10">
+                  Ask me anything about your spending! <br/> e.g., "How much did I spend on food?"
+                </div>
+              )}
+              {chatMessages.map((msg, i) => (
+                <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  <div className={`max-w-[80%] p-3 rounded-lg text-sm ${msg.role === 'user' ? 'bg-indigo-600 text-white rounded-tr-none' : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-tl-none shadow-sm'}`}>
+                    {msg.content}
+                  </div>
+                </div>
+              ))}
+              {chatLoading && (
+                <div className="flex justify-start">
+                  <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-3 rounded-lg rounded-tl-none shadow-sm text-sm text-slate-500 flex space-x-2 items-center">
+                    <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" />
+                    <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce delay-75" />
+                    <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce delay-150" />
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            <div className="p-3 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800">
+              <form 
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (!chatInput.trim()) return;
+                  const question = chatInput;
+                  setChatMessages(prev => [...prev, { role: 'user', content: question }]);
+                  setChatInput('');
+                  setChatLoading(true);
+                  axios.post('http://localhost:3001/copilot/ask', { question })
+                    .then(res => {
+                      setChatMessages(prev => [...prev, { role: 'ai', content: res.data.answer }]);
+                    })
+                    .catch(() => {
+                      setChatMessages(prev => [...prev, { role: 'ai', content: "Sorry, I'm having trouble connecting to the brain." }]);
+                    })
+                    .finally(() => setChatLoading(false));
+                }}
+                className="flex items-center space-x-2"
+              >
+                <input 
+                  type="text" 
+                  value={chatInput}
+                  onChange={e => setChatInput(e.target.value)}
+                  placeholder="Ask a question..." 
+                  className="flex-1 bg-slate-100 dark:bg-slate-800 border-none rounded-full px-4 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none text-slate-900 dark:text-slate-100"
+                />
+                <button type="submit" disabled={chatLoading} className="bg-indigo-600 hover:bg-indigo-700 text-white p-2 rounded-full disabled:opacity-50 transition-colors">
+                  <MessageSquare className="w-4 h-4" />
+                </button>
+              </form>
+            </div>
+          </div>
+        )}
+        
+        {!chatOpen && (
+          <button 
+            onClick={() => setChatOpen(true)}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white p-4 rounded-full shadow-2xl flex items-center space-x-2 hover:scale-105 transition-transform"
+          >
+            <MessageSquare className="w-6 h-6" />
+          </button>
+        )}
+      </div>
+
     </ThemeProvider>
   );
 }
+
+export default App;

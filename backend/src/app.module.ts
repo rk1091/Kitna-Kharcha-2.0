@@ -10,6 +10,7 @@ import { DedupModule } from './dedup/dedup.module';
 import { CurrencyModule } from './currency/currency.module';
 import { PipelineModule } from './pipeline/pipeline.module';
 import { TransactionsModule } from './transactions/transactions.module';
+import { CopilotModule } from './copilot/copilot.module';
 
 import { BullModule } from '@nestjs/bullmq';
 
@@ -32,6 +33,7 @@ import { BullModule } from '@nestjs/bullmq';
     CurrencyModule,
     PipelineModule,
     TransactionsModule,
+    CopilotModule,
   ],
 })
 export class AppModule {}
