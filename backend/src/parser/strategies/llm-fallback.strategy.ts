@@ -4,11 +4,11 @@ import { LLMService } from '../../llm';
 import { z } from 'zod';
 
 const TransactionSchema = z.object({
-  date: z.string().describe('ISO 8601 date string'),
+  date: z.string().describe('ISO 8601 format WITH EXACT TIME. Parse HH:MM from the text and combine with date (e.g. 2026-05-15T19:14:00.000Z). Default 00:00:00 if missing.'),
   amount: z.number(),
   type: z.enum(['CREDIT', 'DEBIT']),
   description: z.string(),
-  merchantName: z.string().optional(),
+  merchantName: z.string().describe('Highly cleaned merchant name. E.g. RAZ*SWIGGYBengaluru -> Swiggy. WWW DINEOUT CO IN -> Dineout. EMINYKAA -> Nykaa. Remove locations, gateways, and domains.').optional(),
   balance: z.number().optional(),
 });
 

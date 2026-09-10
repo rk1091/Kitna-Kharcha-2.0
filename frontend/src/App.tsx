@@ -140,7 +140,7 @@ export default function App() {
       if (!acc[catName]) acc[catName] = { value: 0, merchants: {} };
       acc[catName].value += Math.abs(amount);
       
-      const merchant = txn.maskedDescription.split(' ')[0] || 'Other';
+      const merchant = txn.normalizedDescription || txn.maskedDescription || 'Other';
       acc[catName].merchants[merchant] = (acc[catName].merchants[merchant] || 0) + Math.abs(amount);
     }
     return acc;
@@ -206,7 +206,7 @@ export default function App() {
 
             <div className="bg-slate-50 dark:bg-slate-900 p-4 rounded-lg mb-6 border border-slate-200 dark:border-slate-800">
               <p className="text-sm text-slate-500 dark:text-slate-400">Description</p>
-              <p className="font-semibold text-slate-900 dark:text-slate-100">{editingTxn.maskedDescription}</p>
+              <p className="font-semibold text-slate-900 dark:text-slate-100">{editingTxn.normalizedDescription || editingTxn.maskedDescription}</p>
               <div className="mt-2 text-xl font-bold text-slate-900 dark:text-slate-100">
                 {parseFloat(editingTxn.amountSigned) < 0 ? '-' : '+'}₹{Math.abs(parseFloat(editingTxn.amountSigned)).toLocaleString('en-IN')}
               </div>
@@ -419,10 +419,10 @@ export default function App() {
                               className="dark:border-slate-800 dark:hover:bg-slate-800/50 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
                             >
                               <TableCell className="font-medium text-slate-600 dark:text-slate-300 whitespace-nowrap">
-                                {new Date(txn.txnDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                {new Date(txn.txnDate).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                               </TableCell>
                               <TableCell>
-                                <div className="font-medium text-slate-900 dark:text-slate-100">{txn.maskedDescription}</div>
+                                <div className="font-medium text-slate-900 dark:text-slate-100">{txn.normalizedDescription || txn.maskedDescription}</div>
                                 <div className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 mt-1">
                                   Engine: {formatEngineName(txn.classificationReason)}
                                 </div>

@@ -100,7 +100,7 @@ export class PipelineProcessor extends WorkerHost {
           txnDate: parsedTxn.date,
           description: parsedTxn.description,
           maskedDescription: parsedTxn.description,
-          normalizedDescription: parsedTxn.description,
+          normalizedDescription: parsedTxn.merchantName || parsedTxn.description,
           direction,
           amountSigned: direction === Direction.CREDIT ? parsedTxn.amount : -parsedTxn.amount,
         };
@@ -119,7 +119,7 @@ export class PipelineProcessor extends WorkerHost {
             txnDate: parsedTxn.date,
             description: parsedTxn.description,
             maskedDescription: parsedTxn.description,
-            normalizedDescription: parsedTxn.description,
+            normalizedDescription: parsedTxn.merchantName || parsedTxn.description,
             direction,
             amountSigned: partialTxn.amountSigned,
             debitAmount: direction === Direction.DEBIT ? baseAmount : null,
