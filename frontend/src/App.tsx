@@ -21,11 +21,14 @@ interface Transaction {
   txnDate: string;
   description: string;
   maskedDescription: string;
+  normalizedDescription?: string;
   amountSigned: string;
   currency: string;
+  direction: 'CREDIT' | 'DEBIT';
+  category: Category | null;
+  categoryId: string | null;
   classificationReason: string;
   tags: string[];
-  category?: Category;
 }
 
 export default function App() {
@@ -561,5 +564,3 @@ export default function App() {
     </ThemeProvider>
   );
 }
-
-export default App;
