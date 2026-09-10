@@ -5,10 +5,16 @@ import { ImportTextDto } from './dto/import-text.dto';
 import { CSVIngester } from './parsers/csv-ingester';
 import { ExcelIngester } from './parsers/excel-ingester';
 import { TextIngester } from './parsers/text-ingester';
+import { PDFIngester } from './parsers/pdf-ingester';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 
 @Injectable()
 export class IngestionService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @InjectQueue('statements') private readonly statementQueue: Queue
+  ) {}
 
   async handleFileUpload(userId: string, file: Express.Multer.File): Promise<StatementUpload> {
     let inputType: InputType;
@@ -26,6 +32,9 @@ export class IngestionService {
     ) {
       inputType = InputType.EXCEL;
       parser = new ExcelIngester();
+    } else if (mimeType === 'application/pdf' || file.originalname.endsWith('.pdf')) {
+      inputType = InputType.PDF;
+      parser = new PDFIngester();
     } else {
       throw new BadRequestException(`Unsupported file type: ${mimeType}`);
     }
@@ -34,9 +43,15 @@ export class IngestionService {
       await parser.parse(file.buffer);
     }
 
+    const fs = require('fs');
+    if (!fs.existsSync('uploads')) fs.mkdirSync('uploads');
+    
     const filePath = file.path || `uploads/${file.originalname}`;
+    if (file.buffer) {
+      fs.writeFileSync(filePath, file.buffer);
+    }
 
-    return this.prisma.statementUpload.create({
+    const upload = await this.prisma.statementUpload.create({
       data: {
         userId,
         fileName: file.originalname,
@@ -45,6 +60,10 @@ export class IngestionService {
         parseStatus: ParseStatus.PENDING,
       },
     });
+
+    await this.statementQueue.add('process-statement', { statementId: upload.id });
+
+    return upload;
   }
 
   async handleTextImport(userId: string, dto: ImportTextDto): Promise<StatementUpload> {
@@ -53,9 +72,12 @@ export class IngestionService {
     
     await parser.parse(Buffer.from(dto.text, 'utf-8'));
 
-    const filePath = 'text-import.txt';
+    const fs = require('fs');
+    if (!fs.existsSync('uploads')) fs.mkdirSync('uploads');
+    const filePath = `uploads/text-import-${Date.now()}.txt`;
+    fs.writeFileSync(filePath, dto.text);
 
-    return this.prisma.statementUpload.create({
+    const upload = await this.prisma.statementUpload.create({
       data: {
         userId,
         fileName: filePath,
@@ -64,5 +86,9 @@ export class IngestionService {
         parseStatus: ParseStatus.PENDING,
       },
     });
+
+    await this.statementQueue.add('process-statement', { statementId: upload.id });
+
+    return upload;
   }
 }

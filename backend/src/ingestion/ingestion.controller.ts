@@ -1,10 +1,12 @@
-import { Controller, Post, UseInterceptors, UploadedFile, Body, Req, BadRequestException } from '@nestjs/common';
+import { Controller, Post, UseInterceptors, UploadedFile, Body, Req, BadRequestException, UseGuards } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { IngestionService } from './ingestion.service';
 import { importTextSchema } from './dto/import-text.dto';
 import { Request } from 'express';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @Controller('statements')
+// @UseGuards(JwtAuthGuard) // Disabled temporarily for easy local UI testing
 export class IngestionController {
   constructor(private readonly ingestionService: IngestionService) {}
 
@@ -17,7 +19,7 @@ export class IngestionController {
     if (!file) {
       throw new BadRequestException('File is required');
     }
-    const userId = (req as any).user?.id || 'default-user-id';
+    const userId = (req as any).user?.id || 'cmtve5piy0000l5jm13ng5ut5';
     return this.ingestionService.handleFileUpload(userId, file);
   }
 
