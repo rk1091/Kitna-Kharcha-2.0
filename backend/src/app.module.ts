@@ -14,13 +14,21 @@ import { CopilotModule } from './copilot/copilot.module';
 
 import { BullModule } from '@nestjs/bullmq';
 
+const redisUrl = process.env.REDIS_URL;
+
 @Module({
   imports: [
     BullModule.forRoot({
-      connection: {
-        host: 'localhost',
-        port: 6379,
-      },
+      connection: redisUrl
+        ? {
+            url: redisUrl,
+            maxRetriesPerRequest: null,
+            enableReadyCheck: false,
+          }
+        : {
+            host: process.env.REDIS_HOST || 'localhost',
+            port: Number(process.env.REDIS_PORT) || 6379,
+          },
     }),
     PrismaModule,
     AuthModule,
