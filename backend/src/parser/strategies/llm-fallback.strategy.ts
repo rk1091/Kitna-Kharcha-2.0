@@ -8,7 +8,7 @@ const TransactionSchema = z.object({
   amount: z.number(),
   type: z.enum(['CREDIT', 'DEBIT']),
   description: z.string(),
-  merchantName: z.string().describe('Highly cleaned merchant name. E.g. RAZ*SWIGGYBengaluru -> Swiggy. WWW DINEOUT CO IN -> Dineout. EMINYKAA -> Nykaa. Remove locations, gateways, and domains.').optional(),
+  merchantName: z.string().describe('Highly cleaned merchant name. E.g. RAZ*SWIGGYBengaluru -> Swiggy. WWW DINEOUT CO IN -> Dineout. EMINYKAA -> Nykaa. Remove locations, gateways, and domains.'),
   balance: z.number().optional(),
 });
 

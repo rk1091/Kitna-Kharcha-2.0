@@ -26,9 +26,14 @@ async function main() {
 
   // Create categories
   const categoriesData = [
-    { name: 'Food', type: 'EXPENSE' as const },
+    { name: 'Food & Dining', type: 'EXPENSE' as const },
+    { name: 'Shopping', type: 'EXPENSE' as const },
     { name: 'Transport', type: 'EXPENSE' as const },
+    { name: 'Utilities & Bills', type: 'EXPENSE' as const },
+    { name: 'Entertainment', type: 'EXPENSE' as const },
+    { name: 'Health & Wellness', type: 'EXPENSE' as const },
     { name: 'Salary', type: 'INCOME' as const },
+    { name: 'Investments', type: 'NEUTRAL' as const },
   ];
 
   const categories: Record<string, string> = {};
