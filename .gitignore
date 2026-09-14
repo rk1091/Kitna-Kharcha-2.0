@@ -10,3 +10,4 @@ coverage/
 backend/last-llm-prompt.txt
 backend/dummy.csv
 text-import.txt
+docs/deployment/DEPLOYMENT-GUIDE.md
