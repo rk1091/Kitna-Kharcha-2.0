@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import axios from 'axios';
+import apiClient from './config/api';
 import { LayoutDashboard, Receipt, Tag, Settings, CreditCard, UploadCloud, RefreshCw, X, MessageSquare } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -52,7 +52,7 @@ export default function App() {
 
   const fetchTransactions = () => {
     setLoading(true);
-    axios.get('http://localhost:3001/transactions')
+    apiClient.get('/transactions')
       .then((res) => {
         setTransactions(res.data);
         setLoading(false);
@@ -65,7 +65,7 @@ export default function App() {
   };
 
   const fetchCategories = () => {
-    axios.get('http://localhost:3001/transactions/categories/all')
+    apiClient.get('/transactions/categories/all')
       .then((res) => setCategories(res.data))
       .catch(console.error);
   };
@@ -84,7 +84,7 @@ export default function App() {
     formData.append('file', file);
 
     toast.promise(
-      axios.post('http://localhost:3001/statements/upload', formData, {
+      apiClient.post('/statements/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       }),
       {
@@ -115,7 +115,7 @@ export default function App() {
   const saveTransactionEdit = async () => {
     if (!editingTxn) return;
     try {
-      await axios.patch(`http://localhost:3001/transactions/${editingTxn.id}`, {
+      await apiClient.patch(`/transactions/${editingTxn.id}`, {
         categoryId: editCategoryId,
         tags: editTags
       });
@@ -525,7 +525,7 @@ export default function App() {
                   setChatMessages(prev => [...prev, { role: 'user', content: question }]);
                   setChatInput('');
                   setChatLoading(true);
-                  axios.post('http://localhost:3001/copilot/ask', { question })
+                  apiClient.post('/copilot/ask', { question })
                     .then(res => {
                       setChatMessages(prev => [...prev, { role: 'ai', content: res.data.answer }]);
                     })
