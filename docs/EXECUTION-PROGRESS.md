@@ -1,11 +1,11 @@
 # Kitna Kharcha 2.0 — Execution Progress Ledger
 
-- **Active Phase:** Step 0 / Phase A
-- **Active Branch:** main (pending branch to fix/foundation)
-- **Last Completed Task:** None (Ready for Step 0 & A1)
-- **Next Task:** Step 0: Working Tree Hygiene -> A1: Rewrite Merchant Normalization Engine
+- **Active Phase:** Phase A (Foundation & Critical Fixes)
+- **Active Branch:** prototype/v1-deployment
+- **Last Completed Task:** Step 0: Working Tree Hygiene & Phase E Deployment Foundation (Docker, CI/CD, Architecture Spec)
+- **Next Task:** A1: Rewrite Merchant Normalization Engine (`backend/src/parser/merchant/merchant-normalizer.ts`)
 - **Pending Blocker:** None
-- **User Action Required:** None at this step
+- **User Action Required:** None (Ready for Task A1)
 
 ---
 
