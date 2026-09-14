@@ -1,0 +1,10 @@
+node_modules
+dist
+uploads/*
+!uploads/.gitkeep
+.env
+.env.*
+*.log
+npm-debug.log*
+test
+*.spec.ts
