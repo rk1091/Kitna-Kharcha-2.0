@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ParseResult } from './interfaces/parser.interface';
 import { HdfcStrategy } from './strategies/hdfc.strategy';
 import { SbiStrategy } from './strategies/sbi.strategy';
+import { GenericStrategy } from './strategies/generic.strategy';
 import { LlmFallbackStrategy } from './strategies/llm-fallback.strategy';
 
 @Injectable()
@@ -11,11 +12,12 @@ export class ParserService {
   constructor(
     private readonly hdfcStrategy: HdfcStrategy,
     private readonly sbiStrategy: SbiStrategy,
+    private readonly genericStrategy: GenericStrategy,
     private readonly llmFallbackStrategy: LlmFallbackStrategy,
   ) {}
 
   async parse(maskedText: string): Promise<ParseResult> {
-    const strategies = [this.hdfcStrategy, this.sbiStrategy];
+    const strategies = [this.hdfcStrategy, this.sbiStrategy, this.genericStrategy];
 
     for (const strategy of strategies) {
       try {

@@ -12,6 +12,10 @@ export enum PIIType {
   CREDIT_CARD = 'CREDIT_CARD',
   CREDIT_LIMIT = 'CREDIT_LIMIT',
   ADDRESS = 'ADDRESS',
+  HSN = 'HSN',
+  CUSTOMER_ID = 'CUSTOMER_ID',
+  CARD_TYPE = 'CARD_TYPE',
+  NOMINEE = 'NOMINEE',
 }
 
 export interface MaskMatch {

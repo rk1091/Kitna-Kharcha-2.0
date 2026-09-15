@@ -1,160 +1,345 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import apiClient from '@/config/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { UploadCloud, ShieldCheck } from 'lucide-react';
+import {
+  UploadCloud,
+  ShieldCheck,
+  CheckCircle2,
+  AlertCircle,
+  Clock,
+  Receipt,
+  ArrowRight,
+  RotateCw,
+  Sparkles,
+} from 'lucide-react';
+import { FileDropZone } from '@/components/upload/FileDropZone';
+import { RawTextPaste } from '@/components/upload/RawTextPaste';
+
+interface StatementStatusResponse {
+  id: string;
+  fileName: string;
+  parseStatus: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
+  healthScore?: number | null;
+  bankName?: string | null;
+  errorMessage?: string | null;
+  _count?: {
+    transactions: number;
+  };
+}
 
 export const UploadPage: React.FC = () => {
   const navigate = useNavigate();
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [dragActive, setDragActive] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [pasteText, setPasteText] = useState('');
-  const [submittingPaste, setSubmittingPaste] = useState(false);
+  const [activeTab, setActiveTab] = useState<'file' | 'text'>('file');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [activeStatementId, setActiveStatementId] = useState<string | null>(null);
+  const [statementResult, setStatementResult] = useState<StatementStatusResponse | null>(null);
 
-  const handleUploadFile = async (file: File) => {
-    if (!file) return;
-    setUploading(true);
+  const pollingTimerRef = useRef<any>(null);
+
+  // Interval polling hook checking GET /statements/:id every 2.5s while PENDING or PROCESSING (Task A11)
+  useEffect(() => {
+    if (!activeStatementId) return;
+
+    const pollStatus = async () => {
+      try {
+        const res = await apiClient.get<StatementStatusResponse>(`/statements/${activeStatementId}`);
+        const data = res.data;
+        setStatementResult(data);
+
+        if (data.parseStatus === 'COMPLETED') {
+          clearInterval(pollingTimerRef.current);
+          setIsProcessing(false);
+          const count = data._count?.transactions ?? 0;
+          toast.success(`Statement parsed successfully! ${count} transactions imported.`);
+        } else if (data.parseStatus === 'FAILED') {
+          clearInterval(pollingTimerRef.current);
+          setIsProcessing(false);
+          toast.error(data.errorMessage || 'Statement parsing failed.');
+        }
+      } catch (err) {
+        console.error('Polling error:', err);
+      }
+    };
+
+    // Poll immediately, then every 2500ms
+    pollStatus();
+    pollingTimerRef.current = setInterval(pollStatus, 2500);
+
+    return () => {
+      if (pollingTimerRef.current) clearInterval(pollingTimerRef.current);
+    };
+  }, [activeStatementId]);
+
+  // Handle File Upload
+  const handleFileUpload = async (file: File, password?: string) => {
+    setIsProcessing(true);
+    setStatementResult(null);
 
     const formData = new FormData();
     formData.append('file', file);
+    if (password) {
+      formData.append('password', password);
+    }
 
-    toast.promise(
-      apiClient.post('/statements/upload', formData, {
+    try {
+      const res = await apiClient.post<StatementStatusResponse>('/statements/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
-      }),
-      {
-        loading: `Masking PII & uploading ${file.name}...`,
-        success: () => {
-          setUploading(false);
-          setTimeout(() => navigate('/statements'), 1200);
-          return 'Uploaded! Masking completed. AI pipeline is categorizing.';
-        },
-        error: (err: any) => {
-          setUploading(false);
-          return err?.response?.data?.message || 'Failed to upload statement.';
-        },
-      },
-    );
+      });
+
+      toast.info(`Uploaded "${file.name}". Starting privacy masking & classification...`);
+      setActiveStatementId(res.data.id);
+      setStatementResult(res.data);
+    } catch (err: any) {
+      setIsProcessing(false);
+      const msg = err?.response?.data?.message || 'Failed to upload statement';
+      toast.error(Array.isArray(msg) ? msg[0] : msg);
+    }
   };
 
-  const handlePasteSubmit = async () => {
-    if (!pasteText.trim()) {
-      toast.error('Please paste transaction text first');
-      return;
-    }
+  // Handle Text Import
+  const handleTextImport = async (text: string) => {
+    setIsProcessing(true);
+    setStatementResult(null);
 
-    setSubmittingPaste(true);
     try {
-      await apiClient.post('/ingestion/text', { text: pasteText });
-      toast.success('Pasted text ingested and sent to classification pipeline!');
-      setPasteText('');
-      setTimeout(() => navigate('/transactions'), 1200);
+      const res = await apiClient.post<StatementStatusResponse>('/statements/import-text', {
+        text,
+      });
+
+      toast.info('Statement text ingested. Sanitizing PII and parsing...');
+      setActiveStatementId(res.data.id);
+      setStatementResult(res.data);
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || 'Failed to ingest text');
-    } finally {
-      setSubmittingPaste(false);
+      setIsProcessing(false);
+      const msg = err?.response?.data?.message || 'Failed to import statement text';
+      toast.error(Array.isArray(msg) ? msg[0] : msg);
     }
+  };
+
+  const resetUpload = () => {
+    setActiveStatementId(null);
+    setStatementResult(null);
+    setIsProcessing(false);
+    if (pollingTimerRef.current) clearInterval(pollingTimerRef.current);
   };
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
       {/* Privacy Guarantee Banner */}
-      <div className="p-4 rounded-xl border border-emerald-500/20 bg-emerald-500/10 flex items-start gap-3">
-        <ShieldCheck className="h-5 w-5 text-emerald-500 shrink-0 mt-0.5" />
+      <div className="p-4 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 flex items-start gap-3.5 shadow-xs">
+        <div className="p-2 rounded-xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 shrink-0">
+          <ShieldCheck className="h-5 w-5" />
+        </div>
         <div className="text-xs">
-          <p className="font-semibold text-foreground">Zero Raw PII Leaves Your Machine</p>
-          <p className="text-muted-foreground mt-0.5">
-            10+ regex masking strategies strip account numbers, IFSC codes, PAN, Aadhaar, phone numbers, and UPI handles before classification.
+          <div className="flex items-center gap-2">
+            <p className="font-bold text-foreground">Zero Raw PII Leaves Your Device</p>
+            <Badge variant="secondary" className="text-[10px] font-semibold bg-emerald-500/20 text-emerald-600 dark:text-emerald-400">
+              Active Sanitizer
+            </Badge>
+          </div>
+          <p className="text-muted-foreground mt-1 leading-relaxed">
+            All bank statements, account numbers, names, PAN, Aadhaar, HSN, and UPI identifiers are scrubbed in-memory via deterministic regular expression sanitization before processing.
           </p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* File Dropzone */}
-        <Card className="shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-sm font-semibold">Statement File Upload</CardTitle>
-            <CardDescription className="text-xs">PDF, CSV, Excel (.xlsx, .xls) bank statements</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div
-              onDragOver={(e) => {
-                e.preventDefault();
-                setDragActive(true);
-              }}
-              onDragLeave={() => setDragActive(false)}
-              onDrop={(e) => {
-                e.preventDefault();
-                setDragActive(false);
-                if (e.dataTransfer.files?.[0]) {
-                  handleUploadFile(e.dataTransfer.files[0]);
-                }
-              }}
-              onClick={() => fileInputRef.current?.click()}
-              className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors ${
-                dragActive ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50 hover:bg-muted/30'
-              }`}
-            >
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".pdf,.csv,.xlsx,.xls,.txt"
-                className="hidden"
-                onChange={(e) => {
-                  if (e.target.files?.[0]) {
-                    handleUploadFile(e.target.files[0]);
-                  }
-                }}
-              />
-
-              <div className="mx-auto w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center mb-3">
-                <UploadCloud className="h-6 w-6" />
+      {/* Upload Processing / Completion Status Card */}
+      {statementResult && (
+        <Card className="shadow-md border-border bg-card animate-in fade-in duration-300">
+          <CardHeader className="pb-3 border-b border-border">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                {statementResult.parseStatus === 'COMPLETED' ? (
+                  <div className="p-1.5 rounded-lg bg-emerald-500/15 text-emerald-500">
+                    <CheckCircle2 className="h-5 w-5" />
+                  </div>
+                ) : statementResult.parseStatus === 'FAILED' ? (
+                  <div className="p-1.5 rounded-lg bg-rose-500/15 text-rose-500">
+                    <AlertCircle className="h-5 w-5" />
+                  </div>
+                ) : (
+                  <div className="p-1.5 rounded-lg bg-primary/15 text-primary animate-spin">
+                    <RotateCw className="h-5 w-5" />
+                  </div>
+                )}
+                <div>
+                  <CardTitle className="text-sm font-bold text-foreground">
+                    {statementResult.parseStatus === 'COMPLETED'
+                      ? 'Statement Parsing & Classification Complete!'
+                      : statementResult.parseStatus === 'FAILED'
+                        ? 'Statement Processing Failed'
+                        : 'Processing Statement...'}
+                  </CardTitle>
+                  <CardDescription className="text-xs mt-0.5">
+                    {statementResult.fileName.replace(/^.*[\\/]/, '')}
+                  </CardDescription>
+                </div>
               </div>
 
-              <p className="text-xs font-semibold text-foreground">
-                {uploading ? 'Uploading & Masking...' : 'Click or drag bank statement here'}
-              </p>
-              <p className="text-[11px] text-muted-foreground mt-1">Supports PDF, CSV, Excel, TXT</p>
-
-              <div className="flex items-center justify-center gap-2 mt-4">
-                <Badge variant="secondary" className="text-[10px]">HDFC</Badge>
-                <Badge variant="secondary" className="text-[10px]">SBI</Badge>
-                <Badge variant="secondary" className="text-[10px]">ICICI</Badge>
-                <Badge variant="secondary" className="text-[10px]">Axis</Badge>
-                <Badge variant="secondary" className="text-[10px]">Universal LLM</Badge>
+              <div className="flex items-center gap-2">
+                {statementResult.parseStatus === 'COMPLETED' && statementResult.healthScore !== null && (
+                  <Badge
+                    variant="secondary"
+                    className="gap-1 text-xs font-mono font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+                  >
+                    <Sparkles className="h-3.5 w-3.5" />
+                    {statementResult.healthScore?.toFixed(0)}% Parser Health
+                  </Badge>
+                )}
               </div>
             </div>
-          </CardContent>
-        </Card>
-
-        {/* Copy-Paste Text Area */}
-        <Card className="shadow-sm flex flex-col justify-between">
-          <CardHeader>
-            <CardTitle className="text-sm font-semibold">Copy-Paste Ingestion</CardTitle>
-            <CardDescription className="text-xs">Paste SMS alerts, email receipts, or text statement rows</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3 flex-1 flex flex-col">
-            <textarea
-              value={pasteText}
-              onChange={(e) => setPasteText(e.target.value)}
-              placeholder="Paste raw bank SMS or statement table rows here...
-e.g. Sent Rs.450 to Swiggy UPI via HDFC Bank on 14-Sep-26"
-              className="w-full flex-1 min-h-[160px] p-3 text-xs bg-muted/40 border border-border rounded-xl font-mono text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary resize-none"
-            />
-            <Button
-              onClick={handlePasteSubmit}
-              disabled={submittingPaste || !pasteText.trim()}
-              className="w-full text-xs font-medium h-9"
-            >
-              {submittingPaste ? 'Processing Text...' : 'Parse Pasted Text'}
-            </Button>
+
+          <CardContent className="p-5 space-y-4 text-xs">
+            {/* Live Pipeline Steps */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="p-3 rounded-xl bg-accent/40 border border-border flex items-center gap-3">
+                <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
+                <div>
+                  <p className="font-semibold text-foreground">1. Client Sanitization</p>
+                  <p className="text-[10px] text-muted-foreground">PII Scrubbed & Masked</p>
+                </div>
+              </div>
+
+              <div className="p-3 rounded-xl bg-accent/40 border border-border flex items-center gap-3">
+                {statementResult.parseStatus === 'COMPLETED' ? (
+                  <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
+                ) : statementResult.parseStatus === 'FAILED' ? (
+                  <AlertCircle className="h-4 w-4 text-rose-500 shrink-0" />
+                ) : (
+                  <Clock className="h-4 w-4 text-amber-500 animate-pulse shrink-0" />
+                )}
+                <div>
+                  <p className="font-semibold text-foreground">2. Table Extraction</p>
+                  <p className="text-[10px] text-muted-foreground">
+                    {statementResult.parseStatus === 'COMPLETED'
+                      ? '100% Extracted'
+                      : statementResult.parseStatus === 'FAILED'
+                        ? 'Failed to Parse'
+                        : 'Normalizing Fields'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-3 rounded-xl bg-accent/40 border border-border flex items-center gap-3">
+                {statementResult.parseStatus === 'COMPLETED' ? (
+                  <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
+                ) : (
+                  <Clock className="h-4 w-4 text-muted-foreground shrink-0" />
+                )}
+                <div>
+                  <p className="font-semibold text-foreground">3. Tiered AI Classification</p>
+                  <p className="text-[10px] text-muted-foreground">
+                    {statementResult.parseStatus === 'COMPLETED'
+                      ? `${statementResult._count?.transactions ?? 0} Classified`
+                      : 'Compound Rules'}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Error Message if Failed */}
+            {statementResult.parseStatus === 'FAILED' && (
+              <div className="p-3.5 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs space-y-1">
+                <p className="font-bold">Error Details:</p>
+                <p>{statementResult.errorMessage || 'Parser could not extract valid transactions from this file.'}</p>
+                <p className="text-[11px] text-muted-foreground mt-1">
+                  Tip: If your statement is an encrypted PDF, make sure to enter the statement password before uploading.
+                </p>
+              </div>
+            )}
+
+            {/* Completion CTA */}
+            {statementResult.parseStatus === 'COMPLETED' && (
+              <div className="pt-2 flex flex-wrap items-center justify-between gap-3">
+                <p className="text-muted-foreground text-xs">
+                  <strong className="text-foreground font-semibold">
+                    {statementResult._count?.transactions ?? 0} transactions
+                  </strong>{' '}
+                  ready for exploration.
+                </p>
+
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={resetUpload}
+                    className="h-8 text-xs font-medium"
+                  >
+                    Upload Another
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => navigate(`/transactions?statementId=${statementResult.id}`)}
+                    className="h-8 text-xs font-semibold gap-1.5"
+                  >
+                    <Receipt className="h-3.5 w-3.5" />
+                    <span>View Transactions</span>
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
-      </div>
+      )}
+
+      {/* Main Upload Selector & Container */}
+      <Card className="shadow-sm border-border bg-card">
+        <CardHeader className="pb-4 border-b border-border">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <UploadCloud className="h-4 w-4 text-primary" />
+                Upload Statements Hub
+              </CardTitle>
+              <CardDescription className="text-xs">
+                Ingest bank statements across formats with local PII protection
+              </CardDescription>
+            </div>
+
+            {/* Format Tabs */}
+            <div className="flex items-center gap-1 bg-muted/40 p-0.5 rounded-lg border border-border">
+              <button
+                type="button"
+                onClick={() => setActiveTab('file')}
+                disabled={isProcessing}
+                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                  activeTab === 'file'
+                    ? 'bg-card text-foreground shadow-xs font-semibold'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                Statement File (PDF / CSV / Excel)
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('text')}
+                disabled={isProcessing}
+                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                  activeTab === 'text'
+                    ? 'bg-card text-foreground shadow-xs font-semibold'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                Raw Text Paste
+              </button>
+            </div>
+          </div>
+        </CardHeader>
+
+        <CardContent className="p-6">
+          {activeTab === 'file' ? (
+            <FileDropZone onUpload={handleFileUpload} isUploading={isProcessing} />
+          ) : (
+            <RawTextPaste onImport={handleTextImport} isImporting={isProcessing} />
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 };

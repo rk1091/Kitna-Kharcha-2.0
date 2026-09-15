@@ -2,10 +2,10 @@
 
 - **Active Phase:** Phase A (Foundation & Critical Fixes)
 - **Active Branch:** dev/v2-execution
-- **Last Completed Task:** A8: Build Rules Management Page (`RulesPage.tsx`)
-- **Next Task:** A9: Build Multi-Format Upload Page (`UploadPage.tsx`)
+- **Last Completed Task:** Checkpoint A: Full Foundation E2E Test Suite Passing (Tasks A1-A12 Complete)
+- **Next Task:** B1: Recurring Transaction & Subscription Detection (`recurring.service.ts`)
 - **Pending Blocker:** None
-- **User Action Required:** None (All dependencies, including `react-router-dom` v6.30.6, are pre-installed)
+- **User Action Required:** Commit Phase A foundation completion (`git add . && git commit`)
 
 ---
 
@@ -23,11 +23,11 @@
 - [x] **A6:** Build Statements Management Page (`StatementsPage.tsx`)
 - [x] **A7:** Build Dedicated Transactions Ledger Page (`TransactionsPage.tsx`)
 - [x] **A8:** Build Rules Management Page (`RulesPage.tsx`)
-- [ ] **A9:** Build Multi-Format Upload Page (`UploadPage.tsx`)
-- [ ] **A10:** Patch PII Masking Engine Gaps (`hsn.strategy.ts`, `gstin.strategy.ts`, etc.)
-- [ ] **A11:** Implement Reliable Upload Polling & Toast Alerts (`UploadPage.tsx`)
-- [ ] **A12:** Port KK1 Deterministic Generic Parser (`generic.strategy.ts`)
-- [ ] **Checkpoint A:** Full Foundation E2E Test Suite Passing
+- [x] **A9:** Build Multi-Format Upload Page (`UploadPage.tsx`)
+- [x] **A10:** Patch PII Masking Engine Gaps (`hsn.strategy.ts`, `gstin.strategy.ts`, etc.)
+- [x] **A11:** Implement Reliable Upload Polling & Toast Alerts (`UploadPage.tsx`)
+- [x] **A12:** Port KK1 Deterministic Generic Parser (`generic.strategy.ts`)
+- [x] **Checkpoint A:** Full Foundation E2E Test Suite Passing
 
 ### Phase B: Intelligence Engine & Copilot (`feat/intelligence`)
 - [ ] **B1:** Recurring Transaction & Subscription Detection (`recurring.service.ts`)

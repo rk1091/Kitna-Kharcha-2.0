@@ -1,209 +1,378 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import apiClient from '@/config/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Sliders, Search, Shield } from 'lucide-react';
-
-interface Rule {
-  id: string;
-  name: string;
-  categoryId: string;
-  category?: { name: string };
-  conditions: any;
-  tags: string[];
-  priority: number;
-  isSystem: boolean;
-  source: 'SYSTEM' | 'USER' | 'AI_LEARNED';
-  hitCount: number;
-}
+import { toast } from 'sonner';
+import {
+  Search,
+  Plus,
+  RefreshCw,
+  Shield,
+  User,
+  Sparkles,
+  Zap,
+} from 'lucide-react';
+import { RuleFormModal, RuleFormData } from '@/components/rules/RuleFormModal';
+import { RulesTable, ClassificationRuleItem } from '@/components/rules/RulesTable';
+import { CategoryOption } from '@/components/transactions/TransactionEditDrawer';
 
 export const RulesPage: React.FC = () => {
-  const [rules, setRules] = useState<Rule[]>([]);
+  const [rules, setRules] = useState<ClassificationRuleItem[]>([]);
+  const [categories, setCategories] = useState<CategoryOption[]>([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
+
+  // Filter State
+  const [searchQuery, setSearchQuery] = useState('');
   const [sourceFilter, setSourceFilter] = useState<'ALL' | 'SYSTEM' | 'USER' | 'AI_LEARNED'>('ALL');
 
-  const fetchRules = () => {
-    setLoading(true);
-    apiClient
-      .get('/classification/rules')
-      .then((res) => {
-        setRules(res.data);
-        setLoading(false);
-      })
-      .catch(() => {
-        // Fallback or empty if not yet exposed
-        setRules([]);
-        setLoading(false);
-      });
-  };
+  // Modal State
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingRule, setEditingRule] = useState<RuleFormData | null>(null);
 
-  useEffect(() => {
-    fetchRules();
+  const fetchRulesAndCategories = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [rulesRes, catsRes] = await Promise.all([
+        apiClient.get<ClassificationRuleItem[]>('/rules'),
+        apiClient.get<CategoryOption[]>('/transactions/categories/all'),
+      ]);
+      setRules(rulesRes.data || []);
+      setCategories(catsRes.data || []);
+    } catch (err) {
+      console.error('Failed to load rules:', err);
+      toast.error('Failed to load classification rules');
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  const filteredRules = rules.filter((r) => {
-    if (sourceFilter !== 'ALL' && r.source !== sourceFilter) return false;
-    if (!search) return true;
-    const q = search.toLowerCase();
-    return (
-      r.name.toLowerCase().includes(q) ||
-      (r.category && r.category.name.toLowerCase().includes(q)) ||
-      r.tags.some((t) => t.toLowerCase().includes(q))
-    );
-  });
+  useEffect(() => {
+    fetchRulesAndCategories();
+  }, [fetchRulesAndCategories]);
 
-  const formatConditions = (conditions: any) => {
-    if (!conditions) return '—';
-    const c = typeof conditions === 'string' ? JSON.parse(conditions) : conditions;
-    const parts = [];
-    if (c.descriptionContains) parts.push(`Contains "${c.descriptionContains}"`);
-    if (c.keyword) parts.push(`Keyword "${c.keyword}"`);
-    if (c.direction) parts.push(`Direction: ${c.direction}`);
-    if (c.amountLessThan) parts.push(`< ₹${c.amountLessThan}`);
-    if (c.amountGreaterThan) parts.push(`> ₹${c.amountGreaterThan}`);
-    return parts.join(' • ') || JSON.stringify(c);
+  // Handle Save / Create / Edit Rule
+  const handleSaveRule = async (data: RuleFormData) => {
+    try {
+      const conditionsPayload: any = {
+        field: data.field,
+        operator: data.operator,
+        value: data.value,
+      };
+
+      if (data.direction && data.direction !== 'ALL') {
+        conditionsPayload.direction = data.direction;
+      }
+      if (data.amountLessThan !== undefined) {
+        conditionsPayload.amountLessThan = data.amountLessThan;
+      }
+      if (data.amountGreaterThan !== undefined) {
+        conditionsPayload.amountGreaterThan = data.amountGreaterThan;
+      }
+
+      if (data.id) {
+        // Edit existing rule
+        const res = await apiClient.patch(`/rules/${data.id}`, {
+          name: data.name,
+          conditions: conditionsPayload,
+          categoryId: data.categoryId,
+          tags: data.tags,
+          priority: data.priority,
+          isActive: data.isActive,
+        });
+        toast.success(`Rule "${data.name}" updated successfully`);
+        setRules((prev) => prev.map((r) => (r.id === data.id ? { ...r, ...res.data } : r)));
+      } else {
+        // Create new rule
+        const res = await apiClient.post('/rules', {
+          name: data.name,
+          conditions: conditionsPayload,
+          categoryId: data.categoryId,
+          tags: data.tags,
+          priority: data.priority,
+          isActive: data.isActive,
+        });
+        toast.success(`Rule "${data.name}" created successfully`);
+        setRules((prev) => [res.data, ...prev]);
+      }
+      setEditingRule(null);
+    } catch (err) {
+      console.error('Failed to save rule:', err);
+      toast.error('Failed to save rule. Please check input parameters.');
+      throw err;
+    }
+  };
+
+  // Handle Delete
+  const handleDeleteRule = async (id: string) => {
+    if (!window.confirm('Are you sure you want to delete this classification rule?')) return;
+    try {
+      await apiClient.delete(`/rules/${id}`);
+      toast.success('Rule deleted successfully');
+      setRules((prev) => prev.filter((r) => r.id !== id));
+    } catch (err) {
+      console.error('Failed to delete rule:', err);
+      toast.error('Failed to delete rule');
+    }
+  };
+
+  // Handle Toggle Active
+  const handleToggleActive = async (id: string, currentState: boolean) => {
+    try {
+      await apiClient.patch(`/rules/${id}`, { isActive: !currentState });
+      setRules((prev) =>
+        prev.map((r) => (r.id === id ? { ...r, isActive: !currentState } : r)),
+      );
+      toast.success(`Rule ${!currentState ? 'activated' : 'deactivated'}`);
+    } catch (err) {
+      console.error('Failed to toggle rule state:', err);
+      toast.error('Failed to toggle rule');
+    }
+  };
+
+  // Filtered Rules
+  const filteredRules = useMemo(() => {
+    return rules.filter((r) => {
+      if (sourceFilter === 'SYSTEM' && (!r.isSystem && r.source !== 'SYSTEM')) return false;
+      if (sourceFilter === 'USER' && (r.isSystem || r.source !== 'USER')) return false;
+      if (sourceFilter === 'AI_LEARNED' && r.source !== 'AI_LEARNED') return false;
+
+      if (!searchQuery.trim()) return true;
+      const q = searchQuery.toLowerCase();
+      const nameMatch = r.name.toLowerCase().includes(q);
+      const categoryMatch = (r.category?.name || '').toLowerCase().includes(q);
+      const tagMatch = r.tags.some((t) => t.toLowerCase().includes(q));
+      const condString = JSON.stringify(r.conditions).toLowerCase();
+      const condMatch = condString.includes(q);
+
+      return nameMatch || categoryMatch || tagMatch || condMatch;
+    });
+  }, [rules, sourceFilter, searchQuery]);
+
+  // Summary Metrics
+  const { totalHits, userCount, systemCount, aiCount } = useMemo(() => {
+    let hits = 0;
+    let user = 0;
+    let system = 0;
+    let ai = 0;
+
+    rules.forEach((r) => {
+      hits += r.hitCount || 0;
+      if (r.isSystem || r.source === 'SYSTEM') system++;
+      else if (r.source === 'AI_LEARNED') ai++;
+      else user++;
+    });
+
+    return { totalHits: hits, userCount: user, systemCount: system, aiCount: ai };
+  }, [rules]);
+
+  // Open Modal for Edit
+  const openEditModal = (rule: ClassificationRuleItem) => {
+    const c = typeof rule.conditions === 'string' ? JSON.parse(rule.conditions) : rule.conditions || {};
+    setEditingRule({
+      id: rule.id,
+      name: rule.name,
+      field: c.field === 'description' ? 'description' : 'normalizedDescription',
+      operator: c.operator || 'contains',
+      value: c.value || c.normalizedMerchantContains || c.descriptionContains || c.keyword || '',
+      direction: c.direction || 'ALL',
+      amountLessThan: c.amountLessThan,
+      amountGreaterThan: c.amountGreaterThan,
+      categoryId: rule.categoryId,
+      tags: rule.tags || [],
+      priority: rule.priority,
+      isActive: rule.isActive,
+    });
+    setIsModalOpen(true);
   };
 
   return (
     <div className="space-y-6">
-      <Card className="shadow-sm">
-        <CardHeader className="pb-3">
+      {/* Top Banner & Quick Action */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-2xl bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border border-primary/20">
+        <div>
+          <h1 className="text-lg font-bold tracking-tight text-foreground flex items-center gap-2">
+            Deterministic Rule Engine
+            <Zap className="h-4 w-4 text-primary" />
+          </h1>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Tier-1 compound classification rules that evaluate instantly with 100% precision before LLM fallbacks.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={fetchRulesAndCategories}
+            className="h-8 gap-2 text-xs font-medium"
+            disabled={loading}
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
+            <span>Refresh</span>
+          </Button>
+          <Button
+            size="sm"
+            onClick={() => {
+              setEditingRule(null);
+              setIsModalOpen(true);
+            }}
+            className="h-8 gap-1.5 text-xs font-semibold"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            <span>New Rule</span>
+          </Button>
+        </div>
+      </div>
+
+      {/* KPI Stats Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <Card className="shadow-xs border-border bg-card">
+          <CardHeader className="pb-1 pt-3 px-4">
+            <CardTitle className="text-[11px] font-semibold text-muted-foreground uppercase">
+              Total Rules
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="px-4 pb-3">
+            <div className="text-xl font-bold text-foreground">{rules.length}</div>
+            <p className="text-[10px] text-muted-foreground mt-0.5">Active classification patterns</p>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-xs border-border bg-card">
+          <CardHeader className="pb-1 pt-3 px-4">
+            <CardTitle className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 uppercase flex items-center gap-1">
+              <User className="h-3 w-3" /> User Rules
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="px-4 pb-3">
+            <div className="text-xl font-bold text-foreground">{userCount}</div>
+            <p className="text-[10px] text-muted-foreground mt-0.5">Custom user rules</p>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-xs border-border bg-card">
+          <CardHeader className="pb-1 pt-3 px-4">
+            <CardTitle className="text-[11px] font-semibold text-purple-600 dark:text-purple-400 uppercase flex items-center gap-1">
+              <Sparkles className="h-3 w-3" /> Auto-Learned
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="px-4 pb-3">
+            <div className="text-xl font-bold text-foreground">{aiCount}</div>
+            <p className="text-[10px] text-muted-foreground mt-0.5">Generated from edits</p>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-xs border-border bg-card">
+          <CardHeader className="pb-1 pt-3 px-4">
+            <CardTitle className="text-[11px] font-semibold text-blue-600 dark:text-blue-400 uppercase flex items-center gap-1">
+              <Shield className="h-3 w-3" /> System Seed
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="px-4 pb-3">
+            <div className="text-xl font-bold text-foreground">{systemCount}</div>
+            <p className="text-[10px] text-muted-foreground mt-0.5">{totalHits} total classifications</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Main Filter & Rules Table Card */}
+      <Card className="shadow-sm border-border bg-card">
+        <CardHeader className="pb-3 border-b border-border">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <CardTitle className="text-sm font-semibold">Tier 1 Compound Rules Engine</CardTitle>
+              <CardTitle className="text-sm font-semibold text-foreground">
+                Classification Rules
+              </CardTitle>
               <CardDescription className="text-xs">
-                Deterministic classification rules that process 80%+ of transactions instantly without AI costs
+                {filteredRules.length} rules matched
               </CardDescription>
+            </div>
+
+            {/* Filter Pills */}
+            <div className="flex flex-wrap items-center gap-1.5">
+              <div className="relative w-full sm:w-56">
+                <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+                <Input
+                  type="text"
+                  placeholder="Search rules, merchants..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-8 h-8 text-xs bg-muted/30"
+                />
+              </div>
+
+              <div className="flex items-center gap-1 bg-muted/40 p-0.5 rounded-lg border border-border">
+                <button
+                  type="button"
+                  onClick={() => setSourceFilter('ALL')}
+                  className={`px-2 py-1 text-[11px] font-medium rounded-md transition-colors ${
+                    sourceFilter === 'ALL'
+                      ? 'bg-card text-foreground shadow-xs font-semibold'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  All ({rules.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSourceFilter('USER')}
+                  className={`px-2 py-1 text-[11px] font-medium rounded-md transition-colors ${
+                    sourceFilter === 'USER'
+                      ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-semibold'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  My Rules ({userCount})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSourceFilter('AI_LEARNED')}
+                  className={`px-2 py-1 text-[11px] font-medium rounded-md transition-colors ${
+                    sourceFilter === 'AI_LEARNED'
+                      ? 'bg-purple-500/15 text-purple-600 dark:text-purple-400 font-semibold'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  Auto-Learned ({aiCount})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSourceFilter('SYSTEM')}
+                  className={`px-2 py-1 text-[11px] font-medium rounded-md transition-colors ${
+                    sourceFilter === 'SYSTEM'
+                      ? 'bg-blue-500/15 text-blue-600 dark:text-blue-400 font-semibold'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  System ({systemCount})
+                </button>
+              </div>
             </div>
           </div>
         </CardHeader>
-        <CardContent>
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-            <div className="relative flex-1 w-full">
-              <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
-              <Input
-                placeholder="Search rules, merchants, categories..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-9 h-9 text-xs"
-              />
-            </div>
-            <div className="flex items-center gap-1.5 shrink-0 w-full sm:w-auto">
-              <Button
-                variant={sourceFilter === 'ALL' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setSourceFilter('ALL')}
-                className="h-9 text-xs"
-              >
-                All
-              </Button>
-              <Button
-                variant={sourceFilter === 'SYSTEM' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setSourceFilter('SYSTEM')}
-                className="h-9 text-xs"
-              >
-                System Default
-              </Button>
-              <Button
-                variant={sourceFilter === 'USER' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setSourceFilter('USER')}
-                className="h-9 text-xs"
-              >
-                User Defined
-              </Button>
-              <Button
-                variant={sourceFilter === 'AI_LEARNED' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setSourceFilter('AI_LEARNED')}
-                className="h-9 text-xs"
-              >
-                Auto-Learned
-              </Button>
-            </div>
-          </div>
+        <CardContent className="p-0">
+          <RulesTable
+            rules={filteredRules}
+            loading={loading}
+            onEdit={openEditModal}
+            onDelete={handleDeleteRule}
+            onToggleActive={handleToggleActive}
+          />
         </CardContent>
       </Card>
 
-      <Card className="shadow-sm">
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader className="bg-muted/30">
-              <TableRow>
-                <TableHead className="text-[11px]">Rule Name</TableHead>
-                <TableHead className="text-[11px]">Category</TableHead>
-                <TableHead className="text-[11px]">Matching Conditions</TableHead>
-                <TableHead className="text-[11px]">Source</TableHead>
-                <TableHead className="text-[11px] text-right">Priority</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {loading ? (
-                <TableRow>
-                  <TableCell colSpan={5} className="h-32 text-center text-xs text-muted-foreground">
-                    Loading rules...
-                  </TableCell>
-                </TableRow>
-              ) : filteredRules.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={5} className="h-32 text-center text-xs text-muted-foreground">
-                    <Sliders className="h-8 w-8 mx-auto text-muted-foreground/40 mb-2" />
-                    <p>No rules found.</p>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filteredRules.map((rule) => (
-                  <TableRow key={rule.id} className="text-xs hover:bg-muted/30">
-                    <TableCell className="font-semibold text-foreground">
-                      <div className="flex items-center gap-2">
-                        <span>{rule.name}</span>
-                        {rule.isSystem && (
-                          <span title="Protected System Rule">
-                            <Shield className="h-3 w-3 text-primary" />
-                          </span>
-                        )}
-                      </div>
-                      {rule.tags.length > 0 && (
-                        <div className="flex gap-1 mt-1">
-                          {rule.tags.map((t, idx) => (
-                            <span key={idx} className="text-[9px] px-1.5 py-0.2 rounded bg-muted text-muted-foreground">
-                              #{t}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="secondary" className="text-[10px]">
-                        {rule.category ? rule.category.name : 'Target Category'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground font-mono text-[11px]">
-                      {formatConditions(rule.conditions)}
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant="outline"
-                        className="text-[10px] font-mono capitalize"
-                      >
-                        {rule.source}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right font-mono font-semibold text-[11px]">
-                      {rule.priority}
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+      {/* Create / Edit Rule Modal */}
+      <RuleFormModal
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false);
+          setEditingRule(null);
+        }}
+        onSave={handleSaveRule}
+        initialData={editingRule}
+        categories={categories}
+      />
     </div>
   );
 };

@@ -19,7 +19,7 @@ export class PersonalStrategy implements MaskingStrategy {
     }
 
     // Phone regex: 10 digits, optionally preceded by +91 or 91
-    const phoneRegex = /(?:\+91|91)?[\s-]?[6-9]\d{9}\b/g;
+    const phoneRegex = /(?:\+91[\s-]?|\b91[\s-]|\b)[6-9]\d{9}\b/g;
     while ((match = phoneRegex.exec(text)) !== null) {
       matches.push({
         start: match.index,

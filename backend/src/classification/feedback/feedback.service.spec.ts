@@ -16,10 +16,11 @@ describe('FeedbackService', () => {
     } as unknown as Transaction;
 
     const rule = service.suggestRule(txn, 'cat-food');
+    const conditions = rule.conditions as any;
 
     expect(rule.categoryId).toBe('cat-food');
-    expect(rule.conditions.descriptionContains).toBe('zomato');
-    expect(rule.conditions.direction).toBe('DEBIT');
+    expect(conditions.descriptionContains).toBe('zomato');
+    expect(conditions.direction).toBe('DEBIT');
   });
   
   it('should handle short descriptions', () => {
@@ -29,6 +30,7 @@ describe('FeedbackService', () => {
     } as unknown as Transaction;
 
     const rule = service.suggestRule(txn, 'cat-fee');
-    expect(rule.conditions.descriptionContains).toBe('fee');
+    const conditions = rule.conditions as any;
+    expect(conditions.descriptionContains).toBe('fee');
   });
 });

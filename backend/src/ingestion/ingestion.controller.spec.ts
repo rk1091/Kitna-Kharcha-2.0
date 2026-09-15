@@ -37,7 +37,7 @@ describe('IngestionController', () => {
   it('should throw if no file', async () => {
     const req = { user: { id: 'user-1' } } as any;
     
-    await expect(controller.uploadStatement(null as any, req)).rejects.toThrow(BadRequestException);
+    await expect(controller.uploadStatement(null as any, undefined, req)).rejects.toThrow(BadRequestException);
   });
 
   it('should import text', async () => {

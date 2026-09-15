@@ -3,6 +3,11 @@ import { MaskingResult, MaskMatch, MaskingStrategy } from './interfaces/masking.
 import { FinancialStrategy } from './strategies/financial.strategy';
 import { PersonalStrategy } from './strategies/personal.strategy';
 import { BankingStrategy } from './strategies/banking.strategy';
+import { HsnStrategy } from './strategies/hsn.strategy';
+import { GstinStrategy } from './strategies/gstin.strategy';
+import { CardTypeStrategy } from './strategies/card-type.strategy';
+import { CustomerIdStrategy } from './strategies/customer-id.strategy';
+import { AddressPinStrategy } from './strategies/address-pin.strategy';
 import { EncryptionUtil } from './encryption.util';
 import * as crypto from 'crypto';
 
@@ -15,6 +20,11 @@ export class MaskingService {
       new FinancialStrategy(),
       new PersonalStrategy(),
       new BankingStrategy(),
+      new HsnStrategy(),
+      new GstinStrategy(),
+      new CardTypeStrategy(),
+      new CustomerIdStrategy(),
+      new AddressPinStrategy(),
     ];
   }
 
@@ -38,6 +48,9 @@ export class MaskingService {
     // Deduplicate overlapping matches
     allMatches.sort((a, b) => {
       if (a.start === b.start) {
+        if (a.end === b.end) {
+          return b.confidence - a.confidence; // higher confidence first
+        }
         return b.end - a.end; // longest first
       }
       return a.start - b.start;
