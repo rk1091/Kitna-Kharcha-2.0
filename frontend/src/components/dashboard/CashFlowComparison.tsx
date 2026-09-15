@@ -12,7 +12,7 @@ import {
   AreaChart,
   Area,
 } from 'recharts';
-import { ArrowUpRight, ArrowDownRight, TrendingUp, Wallet, ArrowDownLeft, PieChart as PieIcon } from 'lucide-react';
+import { TrendingUp, Wallet, ArrowDownLeft } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 export interface CashFlowTransaction {

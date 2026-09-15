@@ -14,6 +14,56 @@ export class CopilotService {
     private readonly recurringService: RecurringService,
   ) {}
 
+  async getSessionHistory(
+    userId: string,
+  ): Promise<Array<{ role: 'user' | 'ai'; content: string; timestamp?: string }>> {
+    const session = await this.prisma.copilotSession.findFirst({
+      where: { userId },
+      orderBy: { updatedAt: 'desc' },
+    });
+    if (!session || !Array.isArray(session.messages)) {
+      return [];
+    }
+    return session.messages as any;
+  }
+
+  async saveMessageToSession(userId: string, role: 'user' | 'ai', content: string) {
+    try {
+      let session = await this.prisma.copilotSession.findFirst({
+        where: { userId },
+        orderBy: { updatedAt: 'desc' },
+      });
+
+      const newMsg = { role, content, timestamp: new Date().toISOString() };
+
+      if (!session) {
+        await this.prisma.copilotSession.create({
+          data: {
+            userId,
+            messages: [newMsg],
+          },
+        });
+      } else {
+        const existing = Array.isArray(session.messages) ? (session.messages as any[]) : [];
+        await this.prisma.copilotSession.update({
+          where: { id: session.id },
+          data: {
+            messages: [...existing, newMsg],
+          },
+        });
+      }
+    } catch (err) {
+      this.logger.warn(`Failed to save copilot session message: ${err}`);
+    }
+  }
+
+  async clearSessionHistory(userId: string) {
+    await this.prisma.copilotSession.deleteMany({
+      where: { userId },
+    });
+    return { success: true };
+  }
+
   async askCopilot(userId: string, question: string): Promise<string> {
     const systemInstruction = `You are an expert personal finance AI assistant named 'Kitna Kharcha Copilot'.
 You have access to powerful tools to query the user's financial database.
@@ -21,6 +71,9 @@ When the user asks a question, call the appropriate tool to fetch the data, then
 Always answer in Indian Rupees (₹). Be concise, friendly, analytical, and suggest actionable tips when relevant.`;
 
     const tools = this.getToolDefinitions();
+
+    // Persist incoming user question
+    await this.saveMessageToSession(userId, 'user', question);
 
     try {
       this.logger.log(`Copilot Tool Execution Started for question: "${question}"`);
@@ -32,7 +85,9 @@ Always answer in Indian Rupees (₹). Be concise, friendly, analytical, and sugg
       });
 
       if (!toolCalls || toolCalls.length === 0) {
-        return text || "I couldn't find the necessary data to answer that question.";
+        const fallbackAnswer = text || "I couldn't find the necessary data to answer that question.";
+        await this.saveMessageToSession(userId, 'ai', fallbackAnswer);
+        return fallbackAnswer;
       }
 
       let toolResponses = '';
@@ -49,10 +104,13 @@ Always answer in Indian Rupees (₹). Be concise, friendly, analytical, and sugg
         systemInstruction,
       });
 
+      await this.saveMessageToSession(userId, 'ai', finalResponse);
       return finalResponse;
     } catch (e) {
       this.logger.error('Copilot Error:', e);
-      return 'I encountered an error trying to process your request. Please try again.';
+      const errorMsg = 'I encountered an error trying to process your request. Please try again.';
+      await this.saveMessageToSession(userId, 'ai', errorMsg);
+      return errorMsg;
     }
   }
 

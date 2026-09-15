@@ -1,12 +1,11 @@
 import React, { useMemo } from 'react';
-import { CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
   X,
   Layers,
   ShoppingBag,
-  TrendingUp,
   Receipt,
   PlusCircle,
   Calendar,

@@ -35,7 +35,7 @@ const DEFAULT_PALETTE = [
 ];
 
 // Helper to generate complementary tint for outer merchant slices
-function getMerchantColor(baseColor: string, index: number, total: number): string {
+function getMerchantColor(baseColor: string, index: number, _total?: number): string {
   // Variations of opacity / brightness for outer ring
   const opacities = [0.85, 0.7, 0.55, 0.4, 0.3];
   const opacity = opacities[index % opacities.length];

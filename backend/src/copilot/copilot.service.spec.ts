@@ -21,6 +21,12 @@ describe('CopilotService', () => {
       transaction: {
         findMany: vi.fn(),
       },
+      copilotSession: {
+        findFirst: vi.fn(),
+        create: vi.fn(),
+        update: vi.fn(),
+        deleteMany: vi.fn(),
+      },
     };
 
     recurringMock = {
@@ -228,5 +234,21 @@ describe('CopilotService', () => {
     expect(llmMock.generateWithTools).toHaveBeenCalled();
     expect(llmMock.generateText).toHaveBeenCalled();
     expect(answer).toBe('You have no active subscriptions.');
+  });
+
+  it('should get session history and save messages', async () => {
+    prismaMock.copilotSession.findFirst.mockResolvedValue({
+      id: 'session-1',
+      messages: [{ role: 'user', content: 'Hello' }],
+    });
+
+    const history = await service.getSessionHistory('user-1');
+    expect(history).toHaveLength(1);
+    expect(history[0].content).toBe('Hello');
+
+    await service.clearSessionHistory('user-1');
+    expect(prismaMock.copilotSession.deleteMany).toHaveBeenCalledWith({
+      where: { userId: 'user-1' },
+    });
   });
 });

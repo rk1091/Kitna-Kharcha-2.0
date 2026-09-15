@@ -198,6 +198,30 @@ export class TransactionsService {
     });
   }
 
+  async createCategory(data: { name: string; type?: 'EXPENSE' | 'INCOME' | 'NEUTRAL'; color?: string; icon?: string }) {
+    return this.prisma.category.create({
+      data: {
+        name: data.name,
+        type: data.type || 'EXPENSE',
+        color: data.color || '#6366F1',
+        icon: data.icon || 'Tag',
+      },
+    });
+  }
+
+  async updateCategory(id: string, data: { name?: string; color?: string; icon?: string }) {
+    return this.prisma.category.update({
+      where: { id },
+      data,
+    });
+  }
+
+  async deleteCategory(id: string) {
+    return this.prisma.category.delete({
+      where: { id },
+    });
+  }
+
   async getAllTags(userId: string): Promise<string[]> {
     const txns = await this.prisma.transaction.findMany({
       where: { statement: { userId } },

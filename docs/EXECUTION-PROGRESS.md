@@ -1,11 +1,13 @@
 # Kitna Kharcha 2.0 — Execution Progress Ledger
 
-- **Active Phase:** Phase C (Unified Tags, Advanced Visuals & Copilot UX)
+- **Active Phase:** Phase D (Design Polish, Micro-Interactions & Mobile)
 - **Active Branch:** dev/v2-execution
-- **Last Completed Task:** Checkpoint B: Intelligence & Copilot E2E Test Suite Passing (Tasks B1-B8 Complete)
-- **Next Task:** C1: Unified Category + Colorful Tag System (`TagBadge.tsx`, `schema.prisma`)
+- **Last Completed Task:** Checkpoint C: Visuals, Tags & UX E2E Test Suite Passing (Tasks C1-C6 Complete)
+- **Next Task:** D1: Bespoke Design System & Typography (`tailwind.config.js`, `index.css`)
 - **Pending Blocker:** None
-- **User Action Required:** Commit Phase B intelligence engine completion (`git add . && git commit`)
+- **Commit Protocol (STRICT):**
+  - Commit after every task (recommended and preferred).
+  - **COMPULSORY PHASE GATE:** Must pause, verify test suites, stage with `git add .`, and commit immediately at every Phase Checkpoint before any work on the next phase begins. No phase transitions without a verified commit.
 
 ---
 
@@ -41,13 +43,13 @@
 - [x] **Checkpoint B:** Intelligence & Copilot E2E Test Suite Passing
 
 ### Phase C: Unified Tags, Advanced Visuals & Copilot UX (`feat/ux-and-visuals`)
-- [ ] **C1:** Unified Category + Colorful Tag System (`TagBadge.tsx`, `schema.prisma`)
-- [ ] **C2:** Sunburst Hierarchical Category-Merchant Chart (`SunburstSpendingChart.tsx`)
-- [ ] **C3:** Income & Cash Flow Visualization (`CashFlowComparison.tsx`)
-- [ ] **C4:** Category Sub-Breakdown Modal (`CategoryDrilldownModal.tsx`)
-- [ ] **C5:** Copilot Chat UI Revamp (`CopilotFloatingChat.tsx`)
-- [ ] **C6:** User Settings & Customization Page (`SettingsPage.tsx`)
-- [ ] **Checkpoint C:** Visuals, Tags & UX E2E Test Suite Passing
+- [x] **C1:** Unified Category + Colorful Tag System (`TagBadge.tsx`, `schema.prisma`)
+- [x] **C2:** Sunburst Hierarchical Category-Merchant Chart (`SunburstSpendingChart.tsx`)
+- [x] **C3:** Income & Cash Flow Visualization (`CashFlowComparison.tsx`)
+- [x] **C4:** Category Sub-Breakdown Modal (`CategoryDrilldownModal.tsx`)
+- [x] **C5:** Copilot Chat UI Revamp (`CopilotFloatingChat.tsx`)
+- [x] **C6:** User Settings & Customization Page (`SettingsPage.tsx`)
+- [x] **Checkpoint C:** Visuals, Tags & UX E2E Test Suite Passing
 
 ### Phase D: Design Polish, Micro-Interactions & Mobile (`feat/polish`)
 - [ ] **D1:** Bespoke Design System & Typography (`tailwind.config.js`, `index.css`)

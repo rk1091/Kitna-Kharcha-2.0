@@ -36,6 +36,21 @@ export class TransactionsController {
     return this.transactionsService.getCategories();
   }
 
+  @Post('categories')
+  async createCategory(@Body() body: any) {
+    return this.transactionsService.createCategory(body);
+  }
+
+  @Patch('categories/:id')
+  async updateCategory(@Param('id') id: string, @Body() body: any) {
+    return this.transactionsService.updateCategory(id, body);
+  }
+
+  @Delete('categories/:id')
+  async deleteCategory(@Param('id') id: string) {
+    return this.transactionsService.deleteCategory(id);
+  }
+
   @Get('tags/all')
   async getTags(@Req() req: Request) {
     const userId = (req as any).user?.id || 'cmtve5piy0000l5jm13ng5ut5';
