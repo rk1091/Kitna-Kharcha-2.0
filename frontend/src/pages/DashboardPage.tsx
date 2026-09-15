@@ -1,244 +1,325 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import apiClient from '@/config/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
-import { ArrowUpRight, ArrowDownLeft, Receipt, UploadCloud, ChevronRight, Sparkles } from 'lucide-react';
+import { UploadCloud, ChevronRight, Sparkles, Calendar, Receipt } from 'lucide-react';
+import { KPICards } from '@/components/dashboard/KPICards';
+import { CategoryPieChart } from '@/components/dashboard/CategoryPieChart';
+import { MonthlyTrendBar, MonthlyTrendData } from '@/components/dashboard/MonthlyTrendBar';
+import { TopMerchantsList, TopMerchantItem } from '@/components/dashboard/TopMerchantsList';
 
 interface Category {
   id: string;
   name: string;
-  type: string;
+  type?: string;
 }
 
 interface Transaction {
   id: string;
   txnDate: string;
   description: string;
-  maskedDescription: string;
+  maskedDescription?: string;
   normalizedDescription?: string;
-  amountSigned: string;
+  amountSigned: string | number;
   currency: string;
   direction: 'CREDIT' | 'DEBIT';
   category: Category | null;
   categoryId: string | null;
-  classificationReason: string;
-  tags: string[];
+  classificationReason?: string;
+  tags?: string[];
 }
 
-const COLORS = ['#6366F1', '#EC4899', '#10B981', '#F59E0B', '#3B82F6', '#8B5CF6', '#14B8A6'];
+type DateRangeOption = 'this_month' | '3_months' | 'ytd' | 'all_time';
 
 export const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
+  const [dateRange, setDateRange] = useState<DateRangeOption>('all_time');
 
   useEffect(() => {
+    let isMounted = true;
     apiClient
-      .get('/transactions')
+      .get<Transaction[]>('/transactions')
       .then((res) => {
-        setTransactions(res.data);
-        setLoading(false);
+        if (isMounted) {
+          setTransactions(res.data || []);
+          setLoading(false);
+        }
       })
       .catch((err) => {
-        console.error(err);
-        setLoading(false);
+        console.error('Failed to load transactions:', err);
+        if (isMounted) {
+          setLoading(false);
+        }
       });
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
-  const totalExpense = transactions
-    .filter((t) => t.direction === 'DEBIT')
-    .reduce((acc, curr) => acc + Math.abs(Number(curr.amountSigned)), 0);
+  // Filter transactions based on dateRange
+  const filteredTransactions = useMemo(() => {
+    if (dateRange === 'all_time') return transactions;
 
-  const totalIncome = transactions
-    .filter((t) => t.direction === 'CREDIT')
-    .reduce((acc, curr) => acc + Math.abs(Number(curr.amountSigned)), 0);
+    const now = new Date();
+    return transactions.filter((t) => {
+      const d = new Date(t.txnDate);
+      if (isNaN(d.getTime())) return true;
 
-  const categorizedCount = transactions.filter(
-    (t) => t.classificationReason !== 'FALLBACK_UNCATEGORIZED',
-  ).length;
-  const categorizedRatio = transactions.length > 0 ? (categorizedCount / transactions.length) * 100 : 0;
+      if (dateRange === 'this_month') {
+        return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+      }
+      if (dateRange === '3_months') {
+        const ninetyDaysAgo = new Date();
+        ninetyDaysAgo.setDate(now.getDate() - 90);
+        return d >= ninetyDaysAgo;
+      }
+      if (dateRange === 'ytd') {
+        const startOfYear = new Date(now.getFullYear(), 0, 1);
+        return d >= startOfYear;
+      }
+      return true;
+    });
+  }, [transactions, dateRange]);
 
-  // Chart aggregation
-  const categoryMap: Record<string, number> = {};
-  transactions
-    .filter((t) => t.direction === 'DEBIT')
-    .forEach((t) => {
-      const catName = t.category ? t.category.name : 'Uncategorized';
-      categoryMap[catName] = (categoryMap[catName] || 0) + Math.abs(Number(t.amountSigned));
+  // Aggregate KPI metrics
+  const { totalIncome, totalExpense, netSavings, categorizedCount, categorizedRatio } =
+    useMemo(() => {
+      let income = 0;
+      let expense = 0;
+      let categorized = 0;
+
+      filteredTransactions.forEach((t) => {
+        const amt = Math.abs(Number(t.amountSigned) || 0);
+        if (t.direction === 'CREDIT') {
+          income += amt;
+        } else {
+          expense += amt;
+        }
+
+        if (t.category && t.classificationReason !== 'FALLBACK_UNCATEGORIZED') {
+          categorized++;
+        }
+      });
+
+      const ratio =
+        filteredTransactions.length > 0 ? (categorized / filteredTransactions.length) * 100 : 0;
+
+      return {
+        totalIncome: income,
+        totalExpense: expense,
+        netSavings: income - expense,
+        categorizedCount: categorized,
+        categorizedRatio: ratio,
+      };
+    }, [filteredTransactions]);
+
+  // Category chart distribution data
+  const categoryChartData = useMemo(() => {
+    const categoryMap: Record<string, number> = {};
+    filteredTransactions
+      .filter((t) => t.direction === 'DEBIT')
+      .forEach((t) => {
+        const catName = t.category?.name || 'Uncategorized';
+        const amt = Math.abs(Number(t.amountSigned) || 0);
+        categoryMap[catName] = (categoryMap[catName] || 0) + amt;
+      });
+
+    return Object.entries(categoryMap)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value);
+  }, [filteredTransactions]);
+
+  // Monthly Trend Data
+  const monthlyTrendData = useMemo(() => {
+    const monthMap: Record<string, { income: number; expense: number; timestamp: number }> = {};
+
+    // Group all or filtered transactions by month
+    const sourceData = dateRange === 'this_month' ? transactions : filteredTransactions;
+
+    sourceData.forEach((t) => {
+      const d = new Date(t.txnDate);
+      if (isNaN(d.getTime())) return;
+
+      const monthKey = d.toLocaleDateString('en-IN', { month: 'short', year: '2-digit' });
+      const monthStart = new Date(d.getFullYear(), d.getMonth(), 1).getTime();
+
+      if (!monthMap[monthKey]) {
+        monthMap[monthKey] = { income: 0, expense: 0, timestamp: monthStart };
+      }
+
+      const amt = Math.abs(Number(t.amountSigned) || 0);
+      if (t.direction === 'CREDIT') {
+        monthMap[monthKey].income += amt;
+      } else {
+        monthMap[monthKey].expense += amt;
+      }
     });
 
-  const chartData = Object.keys(categoryMap).map((key) => ({
-    name: key,
-    value: categoryMap[key],
-  }));
+    return Object.entries(monthMap)
+      .sort((a, b) => a[1].timestamp - b[1].timestamp)
+      .map(([month, val]) => ({
+        month,
+        income: val.income,
+        expense: val.expense,
+      })) as MonthlyTrendData[];
+  }, [transactions, filteredTransactions, dateRange]);
 
-  const recentTransactions = transactions.slice(0, 5);
+  // Top 10 Merchants by Spend
+  const topMerchants = useMemo(() => {
+    const merchantMap: Record<string, { totalSpent: number; count: number }> = {};
+
+    filteredTransactions
+      .filter((t) => t.direction === 'DEBIT')
+      .forEach((t) => {
+        const name =
+          t.normalizedDescription ||
+          (t.maskedDescription && !t.maskedDescription.includes('XXXX') ? t.maskedDescription : null) ||
+          t.description ||
+          'Unknown Merchant';
+
+        const amt = Math.abs(Number(t.amountSigned) || 0);
+        if (!merchantMap[name]) {
+          merchantMap[name] = { totalSpent: 0, count: 0 };
+        }
+        merchantMap[name].totalSpent += amt;
+        merchantMap[name].count += 1;
+      });
+
+    return Object.entries(merchantMap)
+      .sort((a, b) => b[1].totalSpent - a[1].totalSpent)
+      .slice(0, 10)
+      .map(([merchant, stat]) => ({
+        merchant,
+        totalSpent: stat.totalSpent,
+        count: stat.count,
+        percentageOfTotal: totalExpense > 0 ? (stat.totalSpent / totalExpense) * 100 : 0,
+      })) as TopMerchantItem[];
+  }, [filteredTransactions, totalExpense]);
+
+  // Recent 5 transactions
+  const recentTransactions = useMemo(() => {
+    return [...filteredTransactions]
+      .sort((a, b) => new Date(b.txnDate).getTime() - new Date(a.txnDate).getTime())
+      .slice(0, 5);
+  }, [filteredTransactions]);
 
   return (
     <div className="space-y-6">
-      {/* Top Welcome Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-2xl bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border border-primary/20">
+      {/* Top Welcome Banner & Date Filter Bar */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 rounded-2xl bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border border-primary/20">
         <div>
           <h1 className="text-lg font-bold tracking-tight text-foreground flex items-center gap-2">
-            Welcome to Kitna Kharcha 2.0
+            Kitna Kharcha Financial Analytics
             <Sparkles className="h-4 w-4 text-primary" />
           </h1>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Your bank statements are parsed with 100% local PII masking before tiered AI classification.
+            100% local PII sanitization with deterministic rule matching and tiered AI intelligence.
           </p>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <Button size="sm" onClick={() => navigate('/upload')} className="gap-2 text-xs font-medium">
+
+        {/* Action Controls & Date Filter */}
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center bg-card border border-border rounded-lg p-0.5 shadow-sm">
+            <Calendar className="h-3.5 w-3.5 text-muted-foreground ml-2 mr-1" />
+            <button
+              onClick={() => setDateRange('this_month')}
+              className={`px-2.5 py-1 text-[11px] font-medium rounded-md transition-colors ${
+                dateRange === 'this_month'
+                  ? 'bg-primary text-primary-foreground font-semibold shadow-xs'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              This Month
+            </button>
+            <button
+              onClick={() => setDateRange('3_months')}
+              className={`px-2.5 py-1 text-[11px] font-medium rounded-md transition-colors ${
+                dateRange === '3_months'
+                  ? 'bg-primary text-primary-foreground font-semibold shadow-xs'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Last 3M
+            </button>
+            <button
+              onClick={() => setDateRange('ytd')}
+              className={`px-2.5 py-1 text-[11px] font-medium rounded-md transition-colors ${
+                dateRange === 'ytd'
+                  ? 'bg-primary text-primary-foreground font-semibold shadow-xs'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              YTD
+            </button>
+            <button
+              onClick={() => setDateRange('all_time')}
+              className={`px-2.5 py-1 text-[11px] font-medium rounded-md transition-colors ${
+                dateRange === 'all_time'
+                  ? 'bg-primary text-primary-foreground font-semibold shadow-xs'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              All Time
+            </button>
+          </div>
+
+          <Button size="sm" onClick={() => navigate('/upload')} className="gap-2 text-xs font-medium h-8">
             <UploadCloud className="h-3.5 w-3.5" />
-            Upload Statements
+            <span>Upload Statements</span>
           </Button>
         </div>
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-              Total Expenses
-            </CardTitle>
-            <ArrowDownLeft className="h-4 w-4 text-rose-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold tracking-tight text-foreground">
-              ₹{totalExpense.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </div>
-            <p className="text-[11px] text-muted-foreground mt-1">Total debited this cycle</p>
-          </CardContent>
-        </Card>
+      {/* KPI Cards Grid */}
+      <KPICards
+        totalIncome={totalIncome}
+        totalExpense={totalExpense}
+        netSavings={netSavings}
+        transactionCount={filteredTransactions.length}
+        categorizedRatio={categorizedRatio}
+        categorizedCount={categorizedCount}
+      />
 
-        <Card className="shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-              Total Income
-            </CardTitle>
-            <ArrowUpRight className="h-4 w-4 text-emerald-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold tracking-tight text-foreground">
-              ₹{totalIncome.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </div>
-            <p className="text-[11px] text-muted-foreground mt-1">Total credited this cycle</p>
-          </CardContent>
-        </Card>
+      {/* Analytics Visualization Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Category Breakdown Donut */}
+        <div className="lg:col-span-1">
+          <CategoryPieChart data={categoryChartData} />
+        </div>
 
-        <Card className="shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-              Auto-Categorized
-            </CardTitle>
-            <Badge variant="secondary" className="text-[10px] font-semibold">
-              Rules + AI
-            </Badge>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold tracking-tight text-foreground">
-              {categorizedRatio.toFixed(0)}%
-            </div>
-            <p className="text-[11px] text-muted-foreground mt-1">
-              {categorizedCount} of {transactions.length} categorized
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-              Transactions
-            </CardTitle>
-            <Receipt className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold tracking-tight text-foreground">
-              {transactions.length}
-            </div>
-            <p className="text-[11px] text-muted-foreground mt-1">Across all uploaded statements</p>
-          </CardContent>
-        </Card>
+        {/* Monthly Trend Bars */}
+        <div className="lg:col-span-2">
+          <MonthlyTrendBar data={monthlyTrendData} />
+        </div>
       </div>
 
-      {/* Analytics & Breakdown Grid */}
+      {/* Top Merchants & Recent Transactions Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Category Breakdown Chart */}
-        <Card className="lg:col-span-1 shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-sm font-semibold">Spending by Category</CardTitle>
-            <CardDescription className="text-xs">Expense allocation across categories</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[240px] flex items-center justify-center">
-              {chartData.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={chartData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={55}
-                      outerRadius={85}
-                      paddingAngle={4}
-                      dataKey="value"
-                    >
-                      {chartData.map((_, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      formatter={(val: number) => [
-                        `₹${val.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`,
-                        'Amount',
-                      ]}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="text-center text-xs text-muted-foreground">
-                  <p>No expense data available</p>
-                  <p className="text-[11px] text-muted-foreground/80 mt-1">Upload a statement to visualize breakdown</p>
-                </div>
-              )}
-            </div>
+        {/* Top 10 Merchants List */}
+        <div className="lg:col-span-1">
+          <TopMerchantsList merchants={topMerchants} totalExpense={totalExpense} />
+        </div>
 
-            <div className="mt-3 space-y-1 max-h-32 overflow-y-auto pr-1">
-              {chartData.map((entry, idx) => (
-                <div key={idx} className="flex items-center justify-between text-xs py-1">
-                  <div className="flex items-center gap-2 truncate">
-                    <span
-                      className="h-2.5 w-2.5 rounded-full shrink-0"
-                      style={{ backgroundColor: COLORS[idx % COLORS.length] }}
-                    />
-                    <span className="text-foreground truncate">{entry.name}</span>
-                  </div>
-                  <span className="font-semibold text-foreground shrink-0">
-                    ₹{entry.value.toLocaleString('en-IN', { minimumFractionDigits: 0 })}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Recent Transactions List */}
-        <Card className="lg:col-span-2 shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between">
+        {/* Recent Transactions Table */}
+        <Card className="lg:col-span-2 shadow-sm border-border bg-card">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
             <div>
-              <CardTitle className="text-sm font-semibold">Recent Transactions</CardTitle>
-              <CardDescription className="text-xs">Latest recorded activity across all statements</CardDescription>
+              <CardTitle className="text-sm font-semibold text-foreground">Recent Transactions</CardTitle>
+              <CardDescription className="text-xs">
+                Latest recorded activity in the current period
+              </CardDescription>
             </div>
             <Button
               variant="ghost"
               size="sm"
               onClick={() => navigate('/transactions')}
-              className="text-xs gap-1 text-primary hover:text-primary"
+              className="text-xs gap-1 text-primary hover:text-primary h-8"
             >
               <span>View All</span>
               <ChevronRight className="h-3.5 w-3.5" />
@@ -246,13 +327,20 @@ export const DashboardPage: React.FC = () => {
           </CardHeader>
           <CardContent>
             {loading ? (
-              <div className="py-12 text-center text-xs text-muted-foreground">Loading recent transactions...</div>
+              <div className="py-12 text-center text-xs text-muted-foreground">
+                Loading recent transactions...
+              </div>
             ) : recentTransactions.length === 0 ? (
               <div className="py-12 text-center text-xs text-muted-foreground">
                 <Receipt className="h-8 w-8 mx-auto text-muted-foreground/50 mb-2" />
-                <p>No transactions found</p>
-                <Button size="sm" variant="outline" className="mt-3 text-xs" onClick={() => navigate('/upload')}>
-                  Upload First Statement
+                <p>No transactions found in this period</p>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="mt-3 text-xs"
+                  onClick={() => navigate('/upload')}
+                >
+                  Upload Statement
                 </Button>
               </div>
             ) : (
@@ -261,7 +349,7 @@ export const DashboardPage: React.FC = () => {
                   <TableHeader className="bg-muted/40">
                     <TableRow>
                       <TableHead className="text-[11px]">Date</TableHead>
-                      <TableHead className="text-[11px]">Description / Merchant</TableHead>
+                      <TableHead className="text-[11px]">Merchant / Description</TableHead>
                       <TableHead className="text-[11px]">Category</TableHead>
                       <TableHead className="text-[11px] text-right">Amount</TableHead>
                     </TableRow>
@@ -269,6 +357,13 @@ export const DashboardPage: React.FC = () => {
                   <TableBody>
                     {recentTransactions.map((t) => {
                       const isCredit = t.direction === 'CREDIT';
+                      const merchantName =
+                        t.normalizedDescription ||
+                        (t.maskedDescription && !t.maskedDescription.includes('XXXX')
+                          ? t.maskedDescription
+                          : null) ||
+                        t.description;
+
                       return (
                         <TableRow key={t.id} className="text-xs hover:bg-muted/30">
                           <TableCell className="text-muted-foreground whitespace-nowrap text-[11px]">
@@ -280,11 +375,14 @@ export const DashboardPage: React.FC = () => {
                           </TableCell>
                           <TableCell className="font-medium">
                             <div className="text-foreground truncate max-w-[200px]">
-                              {t.normalizedDescription || t.maskedDescription || t.description}
+                              {merchantName}
                             </div>
                           </TableCell>
                           <TableCell>
-                            <Badge variant={t.category ? 'secondary' : 'outline'} className="text-[10px] font-medium">
+                            <Badge
+                              variant={t.category ? 'secondary' : 'outline'}
+                              className="text-[10px] font-medium"
+                            >
                               {t.category ? t.category.name : 'Uncategorized'}
                             </Badge>
                           </TableCell>
@@ -294,7 +392,7 @@ export const DashboardPage: React.FC = () => {
                             }`}
                           >
                             {isCredit ? '+' : '-'}₹
-                            {Math.abs(Number(t.amountSigned)).toLocaleString('en-IN', {
+                            {Math.abs(Number(t.amountSigned) || 0).toLocaleString('en-IN', {
                               minimumFractionDigits: 2,
                             })}
                           </TableCell>
