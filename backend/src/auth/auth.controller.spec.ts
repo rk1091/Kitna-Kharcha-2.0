@@ -42,4 +42,11 @@ describe('AuthController', () => {
       expect(service.login).toHaveBeenCalledWith(dto);
     });
   });
+
+  describe('getMe', () => {
+    it('should return user attached to request', async () => {
+      const req = { user: { id: '1', email: 'test@example.com' } } as any;
+      expect(await controller.getMe(req)).toEqual({ id: '1', email: 'test@example.com' });
+    });
+  });
 });

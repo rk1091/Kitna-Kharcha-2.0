@@ -11,7 +11,9 @@ import {
   Sparkles,
   Settings,
   ShieldCheck,
+  LogOut,
 } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
 
 interface NavItem {
   name: string;
@@ -33,6 +35,9 @@ const navItems: NavItem[] = [
 ];
 
 export const Sidebar: React.FC = () => {
+  const { user, logout } = useAuth();
+  const userInitial = (user?.name || user?.email || 'U').charAt(0).toUpperCase();
+
   return (
     <aside className="w-64 border-r border-border bg-card/60 backdrop-blur flex flex-col h-screen sticky top-0 shrink-0 select-none">
       {/* Brand Header */}
@@ -91,16 +96,25 @@ export const Sidebar: React.FC = () => {
         <div className="p-2.5 rounded-lg bg-accent/40 flex items-center justify-between">
           <div className="flex items-center gap-2.5 truncate">
             <div className="h-7 w-7 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold shrink-0">
-              U
+              {userInitial}
             </div>
             <div className="truncate">
-              <p className="text-xs font-medium text-foreground truncate">user@example.com</p>
+              <p className="text-xs font-medium text-foreground truncate">
+                {user?.email || 'user@example.com'}
+              </p>
               <p className="text-[10px] text-emerald-500 font-semibold flex items-center gap-1">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 inline-block"></span>
                 PII Mask Active
               </p>
             </div>
           </div>
+          <button
+            onClick={logout}
+            title="Sign out"
+            className="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors ml-1 shrink-0"
+          >
+            <LogOut className="h-3.5 w-3.5" />
+          </button>
         </div>
       </div>
     </aside>

@@ -6,7 +6,7 @@ import { Request } from 'express';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @Controller('statements')
-// @UseGuards(JwtAuthGuard) // Disabled temporarily for easy local UI testing
+@UseGuards(JwtAuthGuard)
 export class IngestionController {
   constructor(private readonly ingestionService: IngestionService) {}
 

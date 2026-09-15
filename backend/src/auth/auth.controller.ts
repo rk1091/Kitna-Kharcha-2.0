@@ -1,7 +1,9 @@
-import { Controller, Post, Body, UsePipes } from '@nestjs/common';
+import { Controller, Post, Get, Body, UsePipes, UseGuards, Req } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { RegisterDto, LoginDto, RegisterDtoSchema, LoginDtoSchema } from './dto/auth.dto';
 import { ZodValidationPipe } from './zod-validation.pipe';
+import { JwtAuthGuard } from './jwt-auth.guard';
+import { Request } from 'express';
 
 @Controller('auth')
 export class AuthController {
@@ -17,5 +19,11 @@ export class AuthController {
   @UsePipes(new ZodValidationPipe(LoginDtoSchema))
   async login(@Body() dto: LoginDto) {
     return this.authService.login(dto);
+  }
+
+  @Get('me')
+  @UseGuards(JwtAuthGuard)
+  async getMe(@Req() req: Request) {
+    return (req as any).user;
   }
 }

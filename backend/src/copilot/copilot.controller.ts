@@ -1,12 +1,12 @@
 import { Controller, Post, Body, UseGuards, Req } from '@nestjs/common';
 import { CopilotService } from './copilot.service';
-// import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @Controller('copilot')
+@UseGuards(JwtAuthGuard)
 export class CopilotController {
   constructor(private readonly copilotService: CopilotService) {}
 
-  // @UseGuards(JwtAuthGuard) // Disabled for local testing
   @Post('ask')
   async ask(@Body('question') question: string, @Req() req: any) {
     // Hardcode user ID for Phase 2 testing
