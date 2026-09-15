@@ -6,12 +6,16 @@ import { ClassificationRule } from '../interfaces/classification.interface';
 export class FeedbackService {
   suggestRule(txn: Transaction, categoryId: string): Omit<ClassificationRule, 'id'> {
     let keyword = '';
-    if (txn.description) {
-      const words = txn.description.split(/[\s_-]+/).filter(w => w.length > 3);
+
+    // Prefer normalizedDescription if present (clean merchant name)
+    const preferredSource = (txn as any).normalizedDescription || txn.description || '';
+
+    if (preferredSource) {
+      const words = preferredSource.split(/[\s_-]+/).filter((w: string) => w.length > 2);
       if (words.length > 0) {
         keyword = words[0].toLowerCase();
       } else {
-        keyword = txn.description.toLowerCase();
+        keyword = preferredSource.toLowerCase();
       }
     }
 

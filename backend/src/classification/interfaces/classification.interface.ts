@@ -7,14 +7,19 @@ export interface ClassificationResult {
 
 export interface CompoundCondition {
   descriptionContains?: string;
+  normalizedMerchantContains?: string;
+  keyword?: string;
   amountLessThan?: number;
   amountGreaterThan?: number;
   direction?: 'CREDIT' | 'DEBIT';
+  dayOfWeek?: number;
 }
 
 export interface ClassificationRule {
   id: string;
   categoryId: string;
-  conditions: CompoundCondition;
-  tags: string[];
+  conditions: CompoundCondition | string;
+  tags?: string[];
+  priority?: number;
 }
+

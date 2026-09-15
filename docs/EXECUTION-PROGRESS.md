@@ -2,8 +2,8 @@
 
 - **Active Phase:** Phase A (Foundation & Critical Fixes)
 - **Active Branch:** dev/v2-execution
-- **Last Completed Task:** A1: Rewrite Merchant Normalization Engine (`backend/src/parser/merchant/merchant-normalizer.ts`)
-- **Next Task:** A2: Fix Rule Engine & Seed Classification Rules (`seed.ts`, `rule-engine.service.ts`)
+- **Last Completed Task:** A2: Fix Rule Engine & Seed Classification Rules (`seed.ts`, `rule-engine.service.ts`)
+- **Next Task:** A3: Implement React Router & 10 Page Skeletons (`routes.tsx`, `Sidebar.tsx`)
 - **Pending Blocker:** None
 - **User Action Required:** None (All dependencies, including `react-router-dom` v6.30.6, are pre-installed)
 
@@ -16,7 +16,7 @@
 
 ### Phase A: Foundation & Critical Fixes (Branch: `dev/v2-execution`)
 - [x] **A1:** Rewrite Merchant Normalization Engine (`merchant-normalizer.ts`)
-- [ ] **A2:** Fix Rule Engine & Seed Classification Rules (`seed.ts`, `rule-engine.service.ts`)
+- [x] **A2:** Fix Rule Engine & Seed Classification Rules (`seed.ts`, `rule-engine.service.ts`)
 - [ ] **A3:** Implement React Router & 10 Page Skeletons (`routes.tsx`, `Sidebar.tsx`) *(Pre-installed: `react-router-dom` v6.30.6)*
 - [ ] **A4:** Port Auth Flow & Re-enable JWT Backend Guards (`LoginPage.tsx`, `AuthContext.tsx`)
 - [ ] **A5:** Build Full Analytical Dashboard Page (`DashboardPage.tsx`)
