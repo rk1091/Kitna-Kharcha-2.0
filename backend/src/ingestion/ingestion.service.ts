@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { InputType, ParseStatus, StatementUpload } from '@prisma/client';
 import { ImportTextDto } from './dto/import-text.dto';
@@ -8,6 +8,7 @@ import { TextIngester } from './parsers/text-ingester';
 import { PDFIngester } from './parsers/pdf-ingester';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
+import * as fs from 'fs';
 
 @Injectable()
 export class IngestionService {
@@ -43,7 +44,6 @@ export class IngestionService {
       await parser.parse(file.buffer);
     }
 
-    const fs = require('fs');
     if (!fs.existsSync('uploads')) fs.mkdirSync('uploads');
     
     const filePath = file.path || `uploads/${file.originalname}`;
@@ -72,7 +72,6 @@ export class IngestionService {
     
     await parser.parse(Buffer.from(dto.text, 'utf-8'));
 
-    const fs = require('fs');
     if (!fs.existsSync('uploads')) fs.mkdirSync('uploads');
     const filePath = `uploads/text-import-${Date.now()}.txt`;
     fs.writeFileSync(filePath, dto.text);
@@ -90,5 +89,78 @@ export class IngestionService {
     await this.statementQueue.add('process-statement', { statementId: upload.id });
 
     return upload;
+  }
+
+  async getAllStatements(userId: string) {
+    return this.prisma.statementUpload.findMany({
+      where: { userId },
+      orderBy: { uploadedAt: 'desc' },
+      include: {
+        _count: {
+          select: { transactions: true },
+        },
+      },
+    });
+  }
+
+  async getStatementById(userId: string, id: string) {
+    const statement = await this.prisma.statementUpload.findFirst({
+      where: { id, userId },
+      include: {
+        _count: {
+          select: { transactions: true },
+        },
+      },
+    });
+
+    if (!statement) {
+      throw new NotFoundException(`Statement ${id} not found`);
+    }
+
+    return statement;
+  }
+
+  async deleteStatement(userId: string, id: string) {
+    const statement = await this.prisma.statementUpload.findFirst({
+      where: { id, userId },
+    });
+
+    if (!statement) {
+      throw new NotFoundException(`Statement ${id} not found`);
+    }
+
+    // Cascading delete removes all associated transactions via Prisma schema relation
+    await this.prisma.statementUpload.delete({
+      where: { id },
+    });
+
+    if (statement.filePath && fs.existsSync(statement.filePath)) {
+      try {
+        fs.unlinkSync(statement.filePath);
+      } catch {
+        // Ignore file removal errors if file was already moved or removed
+      }
+    }
+
+    return { success: true, deletedId: id };
+  }
+
+  async reclassifyStatement(userId: string, id: string) {
+    const statement = await this.prisma.statementUpload.findFirst({
+      where: { id, userId },
+    });
+
+    if (!statement) {
+      throw new NotFoundException(`Statement ${id} not found`);
+    }
+
+    await this.prisma.statementUpload.update({
+      where: { id },
+      data: { parseStatus: ParseStatus.PENDING },
+    });
+
+    await this.statementQueue.add('process-statement', { statementId: id });
+
+    return { success: true, message: 'Statement queued for re-processing', statementId: id };
   }
 }

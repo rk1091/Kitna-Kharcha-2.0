@@ -2,8 +2,8 @@
 
 - **Active Phase:** Phase A (Foundation & Critical Fixes)
 - **Active Branch:** dev/v2-execution
-- **Last Completed Task:** A5: Build Full Analytical Dashboard Page (`DashboardPage.tsx`)
-- **Next Task:** A6: Build Statements Management Page (`StatementsPage.tsx`)
+- **Last Completed Task:** A6: Build Statements Management Page (`StatementsPage.tsx`)
+- **Next Task:** A7: Build Dedicated Transactions Ledger Page (`TransactionsPage.tsx`)
 - **Pending Blocker:** None
 - **User Action Required:** None (All dependencies, including `react-router-dom` v6.30.6, are pre-installed)
 
@@ -20,7 +20,7 @@
 - [x] **A3:** Implement React Router & 10 Page Skeletons (`routes.tsx`, `Sidebar.tsx`) *(Pre-installed: `react-router-dom` v6.30.6)*
 - [x] **A4:** Port Auth Flow & Re-enable JWT Backend Guards (`LoginPage.tsx`, `AuthContext.tsx`)
 - [x] **A5:** Build Full Analytical Dashboard Page (`DashboardPage.tsx`)
-- [ ] **A6:** Build Statements Management Page (`StatementsPage.tsx`)
+- [x] **A6:** Build Statements Management Page (`StatementsPage.tsx`)
 - [ ] **A7:** Build Dedicated Transactions Ledger Page (`TransactionsPage.tsx`)
 - [ ] **A8:** Build Rules Management Page (`RulesPage.tsx`)
 - [ ] **A9:** Build Multi-Format Upload Page (`UploadPage.tsx`)
