@@ -38,13 +38,14 @@ export class IngestionController {
   @UseInterceptors(FileInterceptor('file'))
   async uploadStatement(
     @UploadedFile() file: Express.Multer.File,
+    @Body('password') password: string | undefined,
     @Req() req: Request
   ) {
     if (!file) {
       throw new BadRequestException('File is required');
     }
     const userId = (req as any).user?.id || 'cmtve5piy0000l5jm13ng5ut5';
-    return this.ingestionService.handleFileUpload(userId, file);
+    return this.ingestionService.handleFileUpload(userId, file, password);
   }
 
   @Post('import-text')

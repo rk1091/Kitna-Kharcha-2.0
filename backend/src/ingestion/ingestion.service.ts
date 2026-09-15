@@ -17,7 +17,11 @@ export class IngestionService {
     @InjectQueue('statements') private readonly statementQueue: Queue
   ) {}
 
-  async handleFileUpload(userId: string, file: Express.Multer.File): Promise<StatementUpload> {
+  async handleFileUpload(
+    userId: string,
+    file: Express.Multer.File,
+    password?: string,
+  ): Promise<StatementUpload> {
     let inputType: InputType;
     let parser;
 
@@ -41,7 +45,11 @@ export class IngestionService {
     }
 
     if (file.buffer) {
-      await parser.parse(file.buffer);
+      if (inputType === InputType.PDF && password) {
+        await (parser as PDFIngester).parse(file.buffer, { password });
+      } else {
+        await parser.parse(file.buffer);
+      }
     }
 
     if (!fs.existsSync('uploads')) fs.mkdirSync('uploads');

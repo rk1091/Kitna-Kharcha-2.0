@@ -2,9 +2,9 @@ import { Ingester } from '../interfaces/ingester.interface';
 const pdf = require('pdf-parse');
 
 export class PDFIngester implements Ingester {
-  async parse(buffer: Buffer): Promise<{ headers: string[]; rows: string[][] }> {
+  async parse(buffer: Buffer, options?: { password?: string }): Promise<{ headers: string[]; rows: string[][] }> {
     try {
-      const data = await pdf(buffer);
+      const data = await pdf(buffer, options?.password ? { password: options.password } : undefined);
       const content = data.text;
       
       if (!content || !content.trim()) {

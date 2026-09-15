@@ -29,9 +29,9 @@ describe('IngestionController', () => {
     
     mockIngestionService.handleFileUpload.mockResolvedValue('success');
     
-    const result = await controller.uploadStatement(file, req);
+    const result = await controller.uploadStatement(file, 'pass123', req);
     expect(result).toBe('success');
-    expect(mockIngestionService.handleFileUpload).toHaveBeenCalledWith('user-1', file);
+    expect(mockIngestionService.handleFileUpload).toHaveBeenCalledWith('user-1', file, 'pass123');
   });
 
   it('should throw if no file', async () => {
