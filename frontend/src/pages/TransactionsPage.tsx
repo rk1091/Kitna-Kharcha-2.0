@@ -1,359 +1,422 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import apiClient from '@/config/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
-import { Search, X, RefreshCw, ChevronRight } from 'lucide-react';
+import {
+  Search,
+  RefreshCw,
+  Receipt,
+  FileText,
+  X,
+  Filter,
+  ArrowDownLeft,
+  ArrowUpRight,
+} from 'lucide-react';
+import {
+  TransactionEditDrawer,
+  CategoryOption,
+  EditableTransaction,
+} from '@/components/transactions/TransactionEditDrawer';
+import { TransactionTable } from '@/components/transactions/TransactionTable';
 
-interface Category {
+interface StatementOption {
   id: string;
-  name: string;
-  type: string;
-}
-
-interface Transaction {
-  id: string;
-  txnDate: string;
-  description: string;
-  maskedDescription: string;
-  normalizedDescription?: string;
-  amountSigned: string;
-  currency: string;
-  direction: 'CREDIT' | 'DEBIT';
-  category: Category | null;
-  categoryId: string | null;
-  classificationReason: string;
-  tags: string[];
+  fileName: string;
+  bankName?: string | null;
 }
 
 export const TransactionsPage: React.FC = () => {
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const statementIdParam = searchParams.get('statementId') || '';
+
+  const [transactions, setTransactions] = useState<EditableTransaction[]>([]);
+  const [categories, setCategories] = useState<CategoryOption[]>([]);
+  const [statements, setStatements] = useState<StatementOption[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Filters State
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('');
   const [filterDirection, setFilterDirection] = useState<'ALL' | 'DEBIT' | 'CREDIT'>('ALL');
+  const [selectedStatementId, setSelectedStatementId] = useState(statementIdParam);
 
-  // Edit Drawer State
-  const [editingTxn, setEditingTxn] = useState<Transaction | null>(null);
-  const [editCategoryId, setEditCategoryId] = useState('');
-  const [editTags, setEditTags] = useState<string[]>([]);
-  const [newTagInput, setNewTagInput] = useState('');
-  const [updating, setUpdating] = useState(false);
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize] = useState(25);
 
-  const fetchTransactions = () => {
+  // Selection State
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+
+  // Drawer State
+  const [editingTransaction, setEditingTransaction] = useState<EditableTransaction | null>(null);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+
+  // Synchronize URL param with filter state
+  useEffect(() => {
+    setSelectedStatementId(statementIdParam);
+  }, [statementIdParam]);
+
+  const fetchTransactions = useCallback(async () => {
     setLoading(true);
-    apiClient
-      .get('/transactions')
-      .then((res) => {
-        setTransactions(res.data);
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error(err);
-        toast.error('Failed to load transactions');
-        setLoading(false);
-      });
-  };
+    try {
+      const params: Record<string, any> = {};
+      if (selectedStatementId) params.statementId = selectedStatementId;
+      if (selectedCategory) params.categoryId = selectedCategory;
+      if (filterDirection !== 'ALL') params.direction = filterDirection;
+      if (searchQuery.trim()) params.search = searchQuery.trim();
 
-  const fetchCategories = () => {
-    apiClient
-      .get('/transactions/categories/all')
-      .then((res) => setCategories(res.data))
-      .catch(console.error);
-  };
+      const res = await apiClient.get<EditableTransaction[]>('/transactions', { params });
+      setTransactions(res.data || []);
+      setSelectedIds([]);
+      setCurrentPage(1);
+    } catch (err) {
+      console.error('Failed to load transactions:', err);
+      toast.error('Failed to load transactions ledger');
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedStatementId, selectedCategory, filterDirection, searchQuery]);
+
+  const fetchCategoriesAndStatements = useCallback(async () => {
+    try {
+      const [catsRes, stmtsRes] = await Promise.all([
+        apiClient.get<CategoryOption[]>('/transactions/categories/all'),
+        apiClient.get<StatementOption[]>('/statements'),
+      ]);
+      setCategories(catsRes.data || []);
+      setStatements(stmtsRes.data || []);
+    } catch (err) {
+      console.error('Failed to load categories/statements metadata:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchCategoriesAndStatements();
+  }, [fetchCategoriesAndStatements]);
 
   useEffect(() => {
     fetchTransactions();
-    fetchCategories();
-  }, []);
+  }, [fetchTransactions]);
 
-  const openEditor = (txn: Transaction) => {
-    setEditingTxn(txn);
-    setEditCategoryId(txn.categoryId || '');
-    setEditTags(txn.tags || []);
-    setNewTagInput('');
-  };
-
-  const handleSaveEdit = async () => {
-    if (!editingTxn) return;
-    setUpdating(true);
-
+  // Handle Edit Transaction Save
+  const handleSaveTransaction = async (updatedData: {
+    id: string;
+    normalizedDescription: string;
+    categoryId: string;
+    tags: string[];
+  }) => {
     try {
-      await apiClient.put(`/transactions/${editingTxn.id}`, {
-        categoryId: editCategoryId || null,
-        tags: editTags,
+      const res = await apiClient.patch(`/transactions/${updatedData.id}`, {
+        normalizedDescription: updatedData.normalizedDescription,
+        categoryId: updatedData.categoryId || null,
+        tags: updatedData.tags,
       });
 
-      toast.success('Transaction updated & auto-learning rule created');
-      setEditingTxn(null);
-      fetchTransactions();
-    } catch {
-      toast.error('Failed to update transaction');
-    } finally {
-      setUpdating(false);
+      toast.success('Transaction updated and classification model trained');
+
+      // Update in local state
+      setTransactions((prev) =>
+        prev.map((t) => (t.id === updatedData.id ? { ...t, ...res.data } : t)),
+      );
+    } catch (err) {
+      console.error('Failed to update transaction:', err);
+      toast.error('Failed to save transaction changes');
+      throw err;
     }
   };
 
-  const filteredTransactions = transactions.filter((t) => {
-    if (filterDirection !== 'ALL' && t.direction !== filterDirection) return false;
-    if (!searchQuery) return true;
-    const q = searchQuery.toLowerCase();
-    return (
-      (t.normalizedDescription && t.normalizedDescription.toLowerCase().includes(q)) ||
-      t.description.toLowerCase().includes(q) ||
-      (t.category && t.category.name.toLowerCase().includes(q)) ||
-      t.tags.some((tag) => tag.toLowerCase().includes(q))
+  // Single Delete
+  const handleDeleteTransaction = async (id: string) => {
+    try {
+      await apiClient.delete(`/transactions/${id}`);
+      toast.success('Transaction deleted');
+      setTransactions((prev) => prev.filter((t) => t.id !== id));
+      setSelectedIds((prev) => prev.filter((item) => item !== id));
+    } catch (err) {
+      console.error('Failed to delete transaction:', err);
+      toast.error('Failed to delete transaction');
+    }
+  };
+
+  // Bulk Categorize
+  const handleBulkCategorize = async (categoryId: string) => {
+    if (selectedIds.length === 0) return;
+    try {
+      await apiClient.post('/transactions/bulk-categorize', {
+        transactionIds: selectedIds,
+        categoryId,
+      });
+      toast.success(`Categorized ${selectedIds.length} transactions`);
+      setSelectedIds([]);
+      fetchTransactions();
+    } catch (err) {
+      console.error('Failed to bulk categorize:', err);
+      toast.error('Failed to apply bulk categorization');
+    }
+  };
+
+  // Bulk Delete
+  const handleBulkDelete = async () => {
+    if (selectedIds.length === 0) return;
+    if (!window.confirm(`Permanently delete ${selectedIds.length} selected transactions?`)) return;
+
+    try {
+      await apiClient.post('/transactions/bulk-delete', {
+        transactionIds: selectedIds,
+      });
+      toast.success(`Deleted ${selectedIds.length} transactions`);
+      setSelectedIds([]);
+      fetchTransactions();
+    } catch (err) {
+      console.error('Failed to bulk delete:', err);
+      toast.error('Failed to delete transactions');
+    }
+  };
+
+  // Selection Toggles
+  const handleToggleSelect = (id: string) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id],
     );
-  });
+  };
+
+  const handleToggleSelectAll = () => {
+    const startIndex = (currentPage - 1) * pageSize;
+    const pageTxns = transactions.slice(startIndex, startIndex + pageSize);
+    const pageIds = pageTxns.map((t) => t.id);
+
+    const isAllPageSelected = pageIds.every((id) => selectedIds.includes(id));
+
+    if (isAllPageSelected) {
+      setSelectedIds((prev) => prev.filter((id) => !pageIds.includes(id)));
+    } else {
+      setSelectedIds((prev) => Array.from(new Set([...prev, ...pageIds])));
+    }
+  };
+
+  const clearStatementFilter = () => {
+    setSelectedStatementId('');
+    searchParams.delete('statementId');
+    setSearchParams(searchParams);
+  };
+
+  // Summary figures for filtered transactions
+  const { totalDebits, totalCredits } = useMemo(() => {
+    let debits = 0;
+    let credits = 0;
+    transactions.forEach((t) => {
+      const amt = Math.abs(Number(t.amountSigned) || 0);
+      if (t.direction === 'CREDIT') credits += amt;
+      else debits += amt;
+    });
+    return { totalDebits: debits, totalCredits: credits };
+  }, [transactions]);
+
+  const activeStatement = statements.find((s) => s.id === selectedStatementId);
 
   return (
     <div className="space-y-6">
-      {/* Top Controls Card */}
-      <Card className="shadow-sm">
-        <CardHeader className="pb-3">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div>
-              <CardTitle className="text-sm font-semibold">Transactions Ledger</CardTitle>
-              <CardDescription className="text-xs">
-                {filteredTransactions.length} of {transactions.length} transactions displayed
-              </CardDescription>
+      {/* Top Header Card */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-2xl bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border border-primary/20">
+        <div>
+          <h1 className="text-lg font-bold tracking-tight text-foreground flex items-center gap-2">
+            Transactions Ledger
+            <Receipt className="h-4 w-4 text-primary" />
+          </h1>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Full transaction history with inline classification, manual editing, and batch categorization.
+          </p>
+        </div>
+
+        {/* Ledger Summary Pill */}
+        <div className="flex items-center gap-3 shrink-0">
+          <div className="flex items-center gap-3 bg-card border border-border px-3 py-1.5 rounded-xl text-xs shadow-xs">
+            <div className="flex items-center gap-1.5 text-rose-600 dark:text-rose-400">
+              <ArrowDownLeft className="h-3.5 w-3.5" />
+              <span className="font-semibold">
+                ₹{totalDebits.toLocaleString('en-IN', { minimumFractionDigits: 0 })}
+              </span>
             </div>
-            <Button variant="outline" size="sm" onClick={fetchTransactions} className="h-8 gap-2 text-xs">
-              <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
-              Refresh
-            </Button>
+            <span className="text-border">|</span>
+            <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
+              <ArrowUpRight className="h-3.5 w-3.5" />
+              <span className="font-semibold">
+                ₹{totalCredits.toLocaleString('en-IN', { minimumFractionDigits: 0 })}
+              </span>
+            </div>
+          </div>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => fetchTransactions()}
+            className="h-8 gap-2 text-xs font-medium"
+            disabled={loading}
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
+            <span>Refresh</span>
+          </Button>
+        </div>
+      </div>
+
+      {/* Filter Controls Card */}
+      <Card className="shadow-sm border-border bg-card">
+        <CardHeader className="pb-3 border-b border-border">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <Filter className="h-4 w-4 text-primary" />
+              <CardTitle className="text-sm font-semibold text-foreground">Filter Ledger</CardTitle>
+            </div>
+            <CardDescription className="text-xs">
+              {transactions.length} transactions matched
+            </CardDescription>
           </div>
         </CardHeader>
-        <CardContent>
-          <div className="flex flex-col sm:flex-row items-center gap-3">
-            <div className="relative flex-1 w-full">
-              <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+        <CardContent className="pt-4 space-y-3">
+          {/* Active Statement Filter Pill */}
+          {activeStatement && (
+            <div className="flex items-center gap-2 text-xs p-2 rounded-lg bg-primary/10 border border-primary/20 text-foreground animate-in fade-in">
+              <FileText className="h-3.5 w-3.5 text-primary" />
+              <span>
+                Filtered by statement:{' '}
+                <strong>
+                  {activeStatement.bankName ? `[${activeStatement.bankName}] ` : ''}
+                  {activeStatement.fileName.replace(/^.*[\\/]/, '')}
+                </strong>
+              </span>
+              <button
+                type="button"
+                onClick={clearStatementFilter}
+                className="ml-auto p-1 rounded-md text-muted-foreground hover:text-foreground"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            {/* Search Input */}
+            <div className="relative">
+              <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
               <Input
-                placeholder="Search merchant, description, tag..."
+                placeholder="Search merchant or description..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 h-9 text-xs"
+                className="pl-8 h-9 text-xs"
               />
             </div>
-            <div className="flex items-center gap-1.5 shrink-0 w-full sm:w-auto">
-              <Button
-                variant={filterDirection === 'ALL' ? 'default' : 'outline'}
-                size="sm"
+
+            {/* Category Filter */}
+            <select
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="h-9 px-3 rounded-md border border-input bg-background text-foreground text-xs shadow-xs"
+            >
+              <option value="">All Categories</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+
+            {/* Statement Filter */}
+            <select
+              value={selectedStatementId}
+              onChange={(e) => {
+                setSelectedStatementId(e.target.value);
+                if (e.target.value) {
+                  searchParams.set('statementId', e.target.value);
+                } else {
+                  searchParams.delete('statementId');
+                }
+                setSearchParams(searchParams);
+              }}
+              className="h-9 px-3 rounded-md border border-input bg-background text-foreground text-xs shadow-xs"
+            >
+              <option value="">All Statements</option>
+              {statements.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.bankName ? `[${s.bankName}] ` : ''}
+                  {s.fileName.replace(/^.*[\\/]/, '')}
+                </option>
+              ))}
+            </select>
+
+            {/* Direction Filter Toggle */}
+            <div className="flex items-center gap-1 bg-muted/40 p-1 rounded-lg border border-border">
+              <button
+                type="button"
                 onClick={() => setFilterDirection('ALL')}
-                className="h-9 text-xs flex-1 sm:flex-initial"
+                className={`flex-1 py-1 rounded text-[11px] font-medium transition-colors ${
+                  filterDirection === 'ALL'
+                    ? 'bg-card text-foreground shadow-xs font-semibold'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
               >
                 All
-              </Button>
-              <Button
-                variant={filterDirection === 'DEBIT' ? 'default' : 'outline'}
-                size="sm"
+              </button>
+              <button
+                type="button"
                 onClick={() => setFilterDirection('DEBIT')}
-                className="h-9 text-xs flex-1 sm:flex-initial"
+                className={`flex-1 py-1 rounded text-[11px] font-medium transition-colors ${
+                  filterDirection === 'DEBIT'
+                    ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400 font-semibold'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
               >
                 Expenses
-              </Button>
-              <Button
-                variant={filterDirection === 'CREDIT' ? 'default' : 'outline'}
-                size="sm"
+              </button>
+              <button
+                type="button"
                 onClick={() => setFilterDirection('CREDIT')}
-                className="h-9 text-xs flex-1 sm:flex-initial"
+                className={`flex-1 py-1 rounded text-[11px] font-medium transition-colors ${
+                  filterDirection === 'CREDIT'
+                    ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-semibold'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
               >
                 Income
-              </Button>
+              </button>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Transactions Table Card */}
-      <Card className="shadow-sm">
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader className="bg-muted/30">
-              <TableRow>
-                <TableHead className="text-[11px]">Date</TableHead>
-                <TableHead className="text-[11px]">Clean Merchant</TableHead>
-                <TableHead className="text-[11px] hidden md:table-cell">Masked Description</TableHead>
-                <TableHead className="text-[11px]">Category</TableHead>
-                <TableHead className="text-[11px] hidden lg:table-cell">Classification</TableHead>
-                <TableHead className="text-[11px] text-right">Amount</TableHead>
-                <TableHead className="text-[11px] w-10"></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {loading ? (
-                <TableRow>
-                  <TableCell colSpan={7} className="h-32 text-center text-xs text-muted-foreground">
-                    Loading transactions ledger...
-                  </TableCell>
-                </TableRow>
-              ) : filteredTransactions.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={7} className="h-32 text-center text-xs text-muted-foreground">
-                    No transactions match your search criteria.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filteredTransactions.map((t) => {
-                  const isCredit = t.direction === 'CREDIT';
-                  return (
-                    <TableRow
-                      key={t.id}
-                      onClick={() => openEditor(t)}
-                      className="cursor-pointer text-xs hover:bg-muted/40 transition-colors"
-                    >
-                      <TableCell className="text-muted-foreground whitespace-nowrap text-[11px]">
-                        {new Date(t.txnDate).toLocaleDateString('en-IN', {
-                          day: '2-digit',
-                          month: 'short',
-                          year: 'numeric',
-                        })}
-                      </TableCell>
-                      <TableCell className="font-semibold text-foreground max-w-[180px] truncate">
-                        {t.normalizedDescription || 'Unknown Merchant'}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground hidden md:table-cell max-w-[220px] truncate text-[11px]">
-                        {t.maskedDescription}
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={t.category ? 'secondary' : 'outline'}
-                          className="text-[10px] font-medium"
-                        >
-                          {t.category ? t.category.name : 'Uncategorized'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="hidden lg:table-cell">
-                        <span className="text-[10px] px-2 py-0.5 rounded font-mono bg-muted text-muted-foreground">
-                          {t.classificationReason}
-                        </span>
-                      </TableCell>
-                      <TableCell
-                        className={`text-right font-semibold whitespace-nowrap ${
-                          isCredit ? 'text-emerald-500' : 'text-foreground'
-                        }`}
-                      >
-                        {isCredit ? '+' : '-'}₹
-                        {Math.abs(Number(t.amountSigned)).toLocaleString('en-IN', {
-                          minimumFractionDigits: 2,
-                        })}
-                      </TableCell>
-                      <TableCell>
-                        <ChevronRight className="h-4 w-4 text-muted-foreground/60" />
-                      </TableCell>
-                    </TableRow>
-                  );
-                })
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+      {/* Transaction Table */}
+      <TransactionTable
+        transactions={transactions}
+        categories={categories}
+        selectedIds={selectedIds}
+        onToggleSelect={handleToggleSelect}
+        onToggleSelectAll={handleToggleSelectAll}
+        onEdit={(txn) => {
+          setEditingTransaction(txn);
+          setIsDrawerOpen(true);
+        }}
+        onDelete={handleDeleteTransaction}
+        onBulkCategorize={handleBulkCategorize}
+        onBulkDelete={handleBulkDelete}
+        currentPage={currentPage}
+        pageSize={pageSize}
+        onPageChange={(page) => setCurrentPage(page)}
+        loading={loading}
+      />
 
-      {/* Edit Drawer / Modal */}
-      {editingTxn && (
-        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex justify-end">
-          <div className="w-full max-w-md bg-card border-l border-border h-full shadow-2xl p-6 flex flex-col justify-between overflow-y-auto animate-in slide-in-from-right duration-200">
-            <div className="space-y-5">
-              <div className="flex items-center justify-between pb-3 border-b border-border">
-                <h3 className="text-sm font-bold text-foreground">Edit Transaction</h3>
-                <button
-                  onClick={() => setEditingTxn(null)}
-                  className="p-1 rounded-md text-muted-foreground hover:text-foreground"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-
-              <div className="space-y-2">
-                <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Merchant</p>
-                <p className="text-sm font-semibold text-foreground">
-                  {editingTxn.normalizedDescription || 'Unknown Merchant'}
-                </p>
-                <p className="text-xs text-muted-foreground bg-muted/40 p-2 rounded-lg font-mono break-all">
-                  {editingTxn.maskedDescription}
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-xs font-semibold text-foreground">Category</label>
-                <select
-                  value={editCategoryId}
-                  onChange={(e) => setEditCategoryId(e.target.value)}
-                  className="w-full h-9 rounded-lg border border-border bg-background px-3 text-xs text-foreground outline-none focus:ring-1 focus:ring-primary"
-                >
-                  <option value="">Uncategorized</option>
-                  {categories.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name} ({c.type})
-                    </option>
-                  ))}
-                </select>
-                <p className="text-[11px] text-muted-foreground">
-                  Changing the category will auto-generate a classification rule for future uploads.
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-xs font-semibold text-foreground">Tags</label>
-                <div className="flex flex-wrap gap-1.5 mb-2">
-                  {editTags.map((tag, idx) => (
-                    <Badge key={idx} variant="secondary" className="text-xs gap-1 py-0.5">
-                      <span>{tag}</span>
-                      <X
-                        className="h-3 w-3 cursor-pointer hover:text-rose-500"
-                        onClick={() => setEditTags(editTags.filter((_, i) => i !== idx))}
-                      />
-                    </Badge>
-                  ))}
-                </div>
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="Add tag (e.g. late-night, food)..."
-                    value={newTagInput}
-                    onChange={(e) => setNewTagInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && newTagInput.trim()) {
-                        e.preventDefault();
-                        if (!editTags.includes(newTagInput.trim())) {
-                          setEditTags([...editTags, newTagInput.trim()]);
-                        }
-                        setNewTagInput('');
-                      }
-                    }}
-                    className="h-8 text-xs"
-                  />
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-8 text-xs"
-                    onClick={() => {
-                      if (newTagInput.trim() && !editTags.includes(newTagInput.trim())) {
-                        setEditTags([...editTags, newTagInput.trim()]);
-                        setNewTagInput('');
-                      }
-                    }}
-                  >
-                    Add
-                  </Button>
-                </div>
-              </div>
-            </div>
-
-            <div className="pt-4 border-t border-border flex items-center justify-end gap-2">
-              <Button variant="outline" size="sm" onClick={() => setEditingTxn(null)} disabled={updating}>
-                Cancel
-              </Button>
-              <Button size="sm" onClick={handleSaveEdit} disabled={updating}>
-                {updating ? 'Saving...' : 'Save & Learn'}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Edit Transaction Slide-out Drawer */}
+      <TransactionEditDrawer
+        transaction={editingTransaction}
+        categories={categories}
+        isOpen={isDrawerOpen}
+        onClose={() => {
+          setIsDrawerOpen(false);
+          setEditingTransaction(null);
+        }}
+        onSave={handleSaveTransaction}
+      />
     </div>
   );
 };
