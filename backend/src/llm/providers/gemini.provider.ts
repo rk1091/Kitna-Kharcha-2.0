@@ -3,35 +3,94 @@ import { z } from 'zod';
 import { zodToJsonSchema } from 'zod-to-json-schema';
 import { LLMProvider } from '../interfaces/llm-provider.interface';
 import { GenerateStructuredOptions, GenerateTextOptions, GenerateWithToolsOptions, ToolCall } from '../interfaces/llm-types';
+import { LlmTrackerService } from '../observability/llm-tracker.service';
 
 export class GeminiProvider implements LLMProvider {
   private genAI: GoogleGenAI;
   private defaultModel = 'gemini-2.5-flash';
+  private tracker?: LlmTrackerService;
 
-  constructor() {
+  constructor(tracker?: LlmTrackerService) {
     const apiKey = process.env.GEMINI_API_KEY || '';
     this.genAI = new GoogleGenAI({ apiKey });
+    this.tracker = tracker;
+  }
+
+  private recordMetrics(
+    startTime: number,
+    operation: string,
+    model: string,
+    prompt: string,
+    response?: any,
+    toolCalls?: ToolCall[],
+    error?: any,
+    userId?: string
+  ) {
+    if (!this.tracker) return;
+    const latencyMs = Date.now() - startTime;
+    const isSuccess = !error;
+
+    let promptTokens = response?.usageMetadata?.promptTokenCount;
+    let completionTokens = response?.usageMetadata?.candidatesTokenCount;
+    let totalTokens = response?.usageMetadata?.totalTokenCount;
+
+    if (promptTokens === undefined || promptTokens === null) {
+      promptTokens = Math.max(1, Math.ceil(prompt.length / 4));
+    }
+    if (completionTokens === undefined || completionTokens === null) {
+      const respText = response?.text || '';
+      completionTokens = isSuccess ? Math.max(0, Math.ceil(respText.length / 4)) : 0;
+    }
+    if (totalTokens === undefined || totalTokens === null) {
+      totalTokens = promptTokens + completionTokens;
+    }
+
+    this.tracker.recordLog({
+      userId,
+      operation,
+      model,
+      promptTokens,
+      completionTokens,
+      totalTokens,
+      latencyMs,
+      toolCalls: toolCalls && toolCalls.length > 0 ? JSON.stringify(toolCalls) : undefined,
+      isSuccess,
+      errorMessage: error?.message || null,
+    }).catch(() => {});
   }
 
   async generateText(options: GenerateTextOptions): Promise<string> {
-    const { prompt, systemInstruction, temperature, maxOutputTokens, model } = options;
+    const { prompt, systemInstruction, temperature, maxOutputTokens, model, userId, operation } = options;
+    const startTime = Date.now();
+    const modelName = model || this.defaultModel;
+    const opName = operation || 'generateText';
     
     const config: any = {};
     if (systemInstruction) config.systemInstruction = systemInstruction;
     if (temperature !== undefined) config.temperature = temperature;
     if (maxOutputTokens !== undefined) config.maxOutputTokens = maxOutputTokens;
 
-    const response = await this.genAI.models.generateContent({
-      model: model || this.defaultModel,
-      contents: prompt,
-      config: Object.keys(config).length > 0 ? config : undefined,
-    });
+    try {
+      const response = await this.genAI.models.generateContent({
+        model: modelName,
+        contents: prompt,
+        config: Object.keys(config).length > 0 ? config : undefined,
+      });
 
-    return response.text || '';
+      const text = response.text || '';
+      this.recordMetrics(startTime, opName, modelName, prompt, response, undefined, undefined, userId);
+      return text;
+    } catch (err: any) {
+      this.recordMetrics(startTime, opName, modelName, prompt, undefined, undefined, err, userId);
+      throw err;
+    }
   }
 
   async generateStructured<T extends z.ZodTypeAny>(options: GenerateStructuredOptions<T>): Promise<z.infer<T>> {
-    const { prompt, schema, systemInstruction, temperature, maxOutputTokens, model } = options;
+    const { prompt, schema, systemInstruction, temperature, maxOutputTokens, model, userId, operation } = options;
+    const startTime = Date.now();
+    const modelName = model || this.defaultModel;
+    const opName = operation || 'generateStructured';
     
     const jsonSchema = zodToJsonSchema(schema as any, { target: 'jsonSchema7' }) as any;
     
@@ -48,36 +107,48 @@ export class GeminiProvider implements LLMProvider {
     if (maxOutputTokens !== undefined) config.maxOutputTokens = maxOutputTokens;
 
     console.log('\n================ LLM REQUEST (STRUCTURED) ================');
-    console.log('Model:', model || this.defaultModel);
+    console.log('Model:', modelName);
     console.log('System Instruction:', systemInstruction || 'None');
     console.log('Prompt:', prompt);
     console.log('Expected Schema Keys:', Object.keys(jsonSchema.properties || {}));
     console.log('==========================================================\n');
 
-    // Save the exact prompt to a file so the user can read it cleanly (bypassing terminal encoding issues)
-    require('fs').writeFileSync('last-llm-prompt.txt', prompt);
+    try {
+      // Save the exact prompt to a file so the user can read it cleanly (bypassing terminal encoding issues)
+      try {
+        require('fs').writeFileSync('last-llm-prompt.txt', prompt);
+      } catch (_) {}
 
-    const response = await this.genAI.models.generateContent({
-      model: model || this.defaultModel,
-      contents: prompt,
-      config,
-    });
+      const response = await this.genAI.models.generateContent({
+        model: modelName,
+        contents: prompt,
+        config,
+      });
 
-    const text = response.text || '';
-    if (!text) {
-      throw new Error('No text returned from Gemini API');
+      const text = response.text || '';
+      if (!text) {
+        throw new Error('No text returned from Gemini API');
+      }
+
+      console.log('\n================ LLM RESPONSE (STRUCTURED) ================');
+      console.log(text);
+      console.log('===========================================================\n');
+
+      this.recordMetrics(startTime, opName, modelName, prompt, response, undefined, undefined, userId);
+
+      const parsed = JSON.parse(text);
+      return schema.parse(parsed);
+    } catch (err: any) {
+      this.recordMetrics(startTime, opName, modelName, prompt, undefined, undefined, err, userId);
+      throw err;
     }
-
-    console.log('\n================ LLM RESPONSE (STRUCTURED) ================');
-    console.log(text);
-    console.log('===========================================================\n');
-
-    const parsed = JSON.parse(text);
-    return schema.parse(parsed);
   }
 
   async generateWithTools(options: GenerateWithToolsOptions): Promise<{ text: string; toolCalls: ToolCall[] }> {
-    const { prompt, tools, systemInstruction, temperature, maxOutputTokens, model } = options;
+    const { prompt, tools, systemInstruction, temperature, maxOutputTokens, model, userId, operation } = options;
+    const startTime = Date.now();
+    const modelName = model || this.defaultModel;
+    const opName = operation || 'generateWithTools';
     
     const functionDeclarations = tools.map(tool => ({
       name: tool.name,
@@ -93,25 +164,32 @@ export class GeminiProvider implements LLMProvider {
     if (temperature !== undefined) config.temperature = temperature;
     if (maxOutputTokens !== undefined) config.maxOutputTokens = maxOutputTokens;
 
-    const response = await this.genAI.models.generateContent({
-      model: model || this.defaultModel,
-      contents: prompt,
-      config,
-    });
+    try {
+      const response = await this.genAI.models.generateContent({
+        model: modelName,
+        contents: prompt,
+        config,
+      });
 
-    const toolCalls: ToolCall[] = [];
-    if (response.functionCalls && Array.isArray(response.functionCalls)) {
-      for (const call of response.functionCalls) {
-        toolCalls.push({
-          name: call.name || 'unknown_tool',
-          arguments: call.args,
-        });
+      const toolCalls: ToolCall[] = [];
+      if (response.functionCalls && Array.isArray(response.functionCalls)) {
+        for (const call of response.functionCalls) {
+          toolCalls.push({
+            name: call.name || 'unknown_tool',
+            arguments: call.args,
+          });
+        }
       }
-    }
 
-    return {
-      text: response.text || '',
-      toolCalls,
-    };
+      this.recordMetrics(startTime, opName, modelName, prompt, response, toolCalls, undefined, userId);
+
+      return {
+        text: response.text || '',
+        toolCalls,
+      };
+    } catch (err: any) {
+      this.recordMetrics(startTime, opName, modelName, prompt, undefined, undefined, err, userId);
+      throw err;
+    }
   }
 }

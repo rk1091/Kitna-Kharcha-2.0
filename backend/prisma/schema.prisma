@@ -23,6 +23,7 @@ model User {
   budgets         Budget[]
   copilotSessions CopilotSession[]
   merchants       UserMerchant[]
+  llmLogs         LlmLog[]
 }
 
 model StatementUpload {
@@ -254,3 +255,25 @@ enum LogLevel {
   ERROR
   DEBUG
 }
+
+model LlmLog {
+  id               String    @id @default(cuid())
+  userId           String?
+  user             User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  operation        String
+  model            String
+  promptTokens     Int       @default(0)
+  completionTokens Int       @default(0)
+  totalTokens      Int       @default(0)
+  latencyMs        Int       @default(0)
+  estimatedCostUsd Float     @default(0.0)
+  toolCalls        String?
+  isSuccess        Boolean   @default(true)
+  errorMessage     String?
+  createdAt        DateTime  @default(now())
+
+  @@index([userId])
+  @@index([operation])
+  @@index([createdAt])
+}
+

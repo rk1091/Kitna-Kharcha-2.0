@@ -6,6 +6,8 @@ export interface GenerateTextOptions {
   temperature?: number;
   maxOutputTokens?: number;
   model?: string;
+  userId?: string;
+  operation?: string;
 }
 
 export interface GenerateStructuredOptions<T extends z.ZodTypeAny> extends GenerateTextOptions {
