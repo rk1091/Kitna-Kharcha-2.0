@@ -16,6 +16,7 @@ import { BudgetModule } from './budgets/budget.module';
 import { InsightsModule } from './insights/insights.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { ExportModule } from './export/export.module';
+import { HealthModule } from './health/health.module';
 
 import { BullModule } from '@nestjs/bullmq';
 
@@ -52,6 +53,7 @@ const redisUrl = process.env.REDIS_URL;
     InsightsModule,
     AnalyticsModule,
     ExportModule,
+    HealthModule,
   ],
 })
 export class AppModule {}

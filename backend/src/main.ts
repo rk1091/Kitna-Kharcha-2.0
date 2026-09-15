@@ -1,7 +1,17 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 
+function validateEnv() {
+  const criticalVars = ['DATABASE_URL', 'JWT_SECRET'];
+  const missing = criticalVars.filter((key) => !process.env[key]);
+  if (missing.length > 0) {
+    console.warn(`[BOOT WARNING] Missing critical environment variables: ${missing.join(', ')}`);
+  }
+}
+
 async function bootstrap() {
+  validateEnv();
+
   const app = await NestFactory.create(AppModule);
   app.enableShutdownHooks();
 
