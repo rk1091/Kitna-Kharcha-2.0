@@ -1,7 +1,7 @@
 # Kitna Kharcha 2.0 — Execution Progress Ledger
 
 - **Active Phase:** Phase A (Foundation & Critical Fixes)
-- **Active Branch:** prototype/v1-deployment
+- **Active Branch:** dev/v2-execution
 - **Last Completed Task:** Step 0: Working Tree Hygiene & Phase E Deployment Foundation (Docker, CI/CD, Architecture Spec)
 - **Next Task:** A1: Rewrite Merchant Normalization Engine (`backend/src/parser/merchant/merchant-normalizer.ts`)
 - **Pending Blocker:** None
@@ -12,9 +12,9 @@
 ## Task Progress Checklist
 
 ### Step 0: Working Tree Hygiene
-- [x] Stage/commit current uncommitted exploration changes on main
+- [x] Stage/commit exploration changes and ledgers (Commit a21ac49)
 
-### Phase A: Foundation & Critical Fixes (`fix/foundation`)
+### Phase A: Foundation & Critical Fixes (Branch: `dev/v2-execution`)
 - [ ] **A1:** Rewrite Merchant Normalization Engine (`merchant-normalizer.ts`)
 - [ ] **A2:** Fix Rule Engine & Seed Classification Rules (`seed.ts`, `rule-engine.service.ts`)
 - [ ] **A3:** Implement React Router & 10 Page Skeletons (`routes.tsx`, `Sidebar.tsx`)

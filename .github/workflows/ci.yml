@@ -2,9 +2,9 @@ name: CI Pipeline
 
 on:
   push:
-    branches: [ main, phase4-architecture, "feat/*", "fix/*" ]
+    branches: [ main, prototype/v1-deployment, dev/v2-execution, "feat/*", "fix/*", "dev/*" ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, dev/v2-execution ]
 
 jobs:
   backend-checks:

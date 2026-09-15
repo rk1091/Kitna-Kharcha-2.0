@@ -95,7 +95,7 @@
 ## 3. Dynamic Continuous Deployment (GitOps Flow)
 
 ```
-Developer runs `git push origin main`
+Developer runs `git push origin <branch>` (e.g. `prototype/v1-deployment` or `main`)
        |
        +---> Cloudflare Pages Webhook
        |        - Clones `frontend/`

@@ -6,7 +6,7 @@
 - **Spec:** [design-spec.md](file:///C:/Users/PC/.gemini/antigravity-cli/brain/d092954f-15ac-4de2-be26-a6127312dc29/design-spec.md)
 - **Plan:** [phase1-plan.md](file:///C:/Users/PC/.gemini/antigravity-cli/brain/d092954f-15ac-4de2-be26-a6127312dc29/phase1-plan.md)
 - **Repo:** `H:\rk-projects\kitna-kharcha-2.0`
-- **GitHub:** TBD (will push after Phase 1)
+- **GitHub:** https://github.com/rk1091/Kitna-Kharcha-2.0
 
 ## Project Structure
 ```
