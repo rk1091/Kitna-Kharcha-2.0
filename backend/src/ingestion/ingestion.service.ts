@@ -21,6 +21,7 @@ export class IngestionService {
     userId: string,
     file: Express.Multer.File,
     password?: string,
+    columnMapping?: string,
   ): Promise<StatementUpload> {
     let inputType: InputType;
     let parser;
@@ -69,7 +70,7 @@ export class IngestionService {
       },
     });
 
-    await this.statementQueue.add('process-statement', { statementId: upload.id });
+    await this.statementQueue.add('process-statement', { statementId: upload.id, columnMapping });
 
     return upload;
   }

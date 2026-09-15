@@ -13,6 +13,7 @@ import { MonthlyTrendBar, MonthlyTrendData } from '@/components/dashboard/Monthl
 import { TopMerchantsList, TopMerchantItem } from '@/components/dashboard/TopMerchantsList';
 import { SunburstSpendingChart, SunburstCategoryItem } from '@/components/charts/SunburstSpendingChart';
 import { CashFlowComparison } from '@/components/dashboard/CashFlowComparison';
+import { ExecutiveSummaryHeader } from '@/components/dashboard/ExecutiveSummaryHeader';
 import { CategoryDrilldownModal } from '@/components/transactions/CategoryDrilldownModal';
 
 interface Category {
@@ -345,6 +346,30 @@ export const DashboardPage: React.FC = () => {
           </Button>
         </div>
       </div>
+
+      {/* Executive Storytelling Narrative Header (Task D2) */}
+      <ExecutiveSummaryHeader
+        totalIncome={totalIncome}
+        totalExpense={totalExpense}
+        netSavings={netSavings}
+        transactionCount={filteredTransactions.length}
+        topCategoryName={categoryChartData[0]?.name}
+        topCategoryPercentage={
+          totalExpense > 0 && categoryChartData[0]
+            ? (categoryChartData[0].value / totalExpense) * 100
+            : 0
+        }
+        topMerchantName={topMerchants[0]?.merchant}
+        dateRangeLabel={
+          dateRange === 'this_month'
+            ? 'this month'
+            : dateRange === '3_months'
+            ? 'the last 3 months'
+            : dateRange === 'ytd'
+            ? 'year-to-date'
+            : 'all time'
+        }
+      />
 
       {/* Proactive Intelligence Insights Feed */}
       <InsightsPanel />

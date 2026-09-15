@@ -12,11 +12,12 @@ import {
 } from 'lucide-react';
 
 interface FileDropZoneProps {
-  onUpload: (file: File, password?: string) => Promise<void>;
+  onUpload: (file: File, password?: string, columnMapping?: Record<string, number>) => Promise<void>;
   isUploading: boolean;
+  onOpenMapper?: (file: File) => void;
 }
 
-export const FileDropZone: React.FC<FileDropZoneProps> = ({ onUpload, isUploading }) => {
+export const FileDropZone: React.FC<FileDropZoneProps> = ({ onUpload, isUploading, onOpenMapper }) => {
   const [dragActive, setDragActive] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [password, setPassword] = useState('');
@@ -221,7 +222,7 @@ export const FileDropZone: React.FC<FileDropZoneProps> = ({ onUpload, isUploadin
           )}
 
           {/* Action Buttons */}
-          <div className="flex items-center justify-between pt-1">
+          <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
             <Button
               variant="outline"
               size="sm"
@@ -232,24 +233,40 @@ export const FileDropZone: React.FC<FileDropZoneProps> = ({ onUpload, isUploadin
               Choose Different File
             </Button>
 
-            <Button
-              size="sm"
-              onClick={handleUploadClick}
-              disabled={isUploading}
-              className="h-9 px-5 text-xs font-semibold gap-2 shadow-sm"
-            >
-              {isUploading ? (
-                <>
-                  <UploadCloud className="h-4 w-4 animate-bounce" />
-                  <span>Uploading & Sanitizing...</span>
-                </>
-              ) : (
-                <>
-                  <CheckCircle className="h-4 w-4" />
-                  <span>Upload & Ingest Statement</span>
-                </>
+            <div className="flex items-center gap-2">
+              {(isExcel || selectedFile?.name.toLowerCase().endsWith('.csv')) && onOpenMapper && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => selectedFile && onOpenMapper(selectedFile)}
+                  disabled={isUploading}
+                  className="h-9 text-xs font-semibold gap-1.5 border-primary/40 text-primary hover:bg-primary/10 shadow-xs"
+                >
+                  <FileSpreadsheet className="h-3.5 w-3.5" />
+                  <span>Preview & Map Columns</span>
+                </Button>
               )}
-            </Button>
+
+              <Button
+                size="sm"
+                onClick={handleUploadClick}
+                disabled={isUploading}
+                className="h-9 px-5 text-xs font-semibold gap-2 shadow-sm"
+              >
+                {isUploading ? (
+                  <>
+                    <UploadCloud className="h-4 w-4 animate-bounce" />
+                    <span>Uploading & Sanitizing...</span>
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className="h-4 w-4" />
+                    <span>Upload & Ingest</span>
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
         </div>
       )}

@@ -1,9 +1,9 @@
 # Kitna Kharcha 2.0 — Execution Progress Ledger
 
-- **Active Phase:** Phase D (Design Polish, Micro-Interactions & Mobile)
+- **Active Phase:** Phase E (Production, Observability & DevOps)
 - **Active Branch:** dev/v2-execution
-- **Last Completed Task:** Checkpoint C: Visuals, Tags & UX E2E Test Suite Passing (Tasks C1-C6 Complete)
-- **Next Task:** D1: Bespoke Design System & Typography (`tailwind.config.js`, `index.css`)
+- **Last Completed Task:** Checkpoint D: Design Polish & Mobile E2E Test Suite Passing (Tasks D1-D5 Complete)
+- **Next Task:** E1: Multi-Format Data Export Engine (`export.service.ts`, `ExportModal.tsx`)
 - **Pending Blocker:** None
 - **Commit Protocol (STRICT):**
   - Commit after every task (recommended and preferred).
@@ -52,12 +52,12 @@
 - [x] **Checkpoint C:** Visuals, Tags & UX E2E Test Suite Passing
 
 ### Phase D: Design Polish, Micro-Interactions & Mobile (`feat/polish`)
-- [ ] **D1:** Bespoke Design System & Typography (`tailwind.config.js`, `index.css`)
-- [ ] **D2:** Dashboard Storytelling Executive Summary (`ExecutiveSummaryHeader.tsx`)
-- [ ] **D3:** Micro-Interactions, Shimmer Skeletons & Toasts (`Skeleton.tsx`, `Toaster.tsx`)
-- [ ] **D4:** Mobile-Responsive Layout & Touch Drawer (`MobileNav.tsx`, `AppLayout.tsx`)
-- [ ] **D5:** Interactive Column Mapping UI for CSV/Excel (`ColumnMapperModal.tsx`)
-- [ ] **Checkpoint D:** Design Polish & Mobile E2E Test Suite Passing
+- [x] **D1:** Bespoke Design System & Typography (`tailwind.config.js`, `index.css`)
+- [x] **D2:** Dashboard Storytelling Executive Summary (`ExecutiveSummaryHeader.tsx`)
+- [x] **D3:** Micro-Interactions, Shimmer Skeletons & Toasts (`Skeleton.tsx`, `Toaster.tsx`)
+- [x] **D4:** Mobile-Responsive Layout & Touch Drawer (`MobileNav.tsx`, `AppLayout.tsx`)
+- [x] **D5:** Interactive Column Mapping UI for CSV/Excel (`ColumnMapperModal.tsx`)
+- [x] **Checkpoint D:** Design Polish & Mobile E2E Test Suite Passing
 
 ### Phase E: Production, Observability & DevOps (`feat/production`)
 - [ ] **E1:** Multi-Format Data Export Engine (`export.service.ts`, `ExportModal.tsx`)

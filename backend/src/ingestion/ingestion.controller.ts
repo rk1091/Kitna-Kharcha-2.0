@@ -39,12 +39,16 @@ export class IngestionController {
   async uploadStatement(
     @UploadedFile() file: Express.Multer.File,
     @Body('password') password: string | undefined,
-    @Req() req: Request
+    @Req() req: Request,
+    @Body('columnMapping') columnMapping?: string,
   ) {
     if (!file) {
       throw new BadRequestException('File is required');
     }
     const userId = (req as any).user?.id || 'cmtve5piy0000l5jm13ng5ut5';
+    if (columnMapping !== undefined) {
+      return this.ingestionService.handleFileUpload(userId, file, password, columnMapping);
+    }
     return this.ingestionService.handleFileUpload(userId, file, password);
   }
 

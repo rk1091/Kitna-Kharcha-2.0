@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { FileDropZone } from '@/components/upload/FileDropZone';
 import { RawTextPaste } from '@/components/upload/RawTextPaste';
+import { ColumnMapperModal } from '@/components/upload/ColumnMapperModal';
 
 interface StatementStatusResponse {
   id: string;
@@ -37,6 +38,7 @@ export const UploadPage: React.FC = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [activeStatementId, setActiveStatementId] = useState<string | null>(null);
   const [statementResult, setStatementResult] = useState<StatementStatusResponse | null>(null);
+  const [mapperFile, setMapperFile] = useState<File | null>(null);
 
   const pollingTimerRef = useRef<any>(null);
 
@@ -75,7 +77,11 @@ export const UploadPage: React.FC = () => {
   }, [activeStatementId]);
 
   // Handle File Upload
-  const handleFileUpload = async (file: File, password?: string) => {
+  const handleFileUpload = async (
+    file: File,
+    password?: string,
+    columnMapping?: Record<string, number>
+  ) => {
     setIsProcessing(true);
     setStatementResult(null);
 
@@ -83,6 +89,9 @@ export const UploadPage: React.FC = () => {
     formData.append('file', file);
     if (password) {
       formData.append('password', password);
+    }
+    if (columnMapping) {
+      formData.append('columnMapping', JSON.stringify(columnMapping));
     }
 
     try {
@@ -97,6 +106,14 @@ export const UploadPage: React.FC = () => {
       setIsProcessing(false);
       const msg = err?.response?.data?.message || 'Failed to upload statement';
       toast.error(Array.isArray(msg) ? msg[0] : msg);
+    }
+  };
+
+  const handleConfirmMapping = (mapping: Record<string, number>) => {
+    if (mapperFile) {
+      const fileToUpload = mapperFile;
+      setMapperFile(null);
+      handleFileUpload(fileToUpload, undefined, mapping);
     }
   };
 
@@ -334,12 +351,25 @@ export const UploadPage: React.FC = () => {
 
         <CardContent className="p-6">
           {activeTab === 'file' ? (
-            <FileDropZone onUpload={handleFileUpload} isUploading={isProcessing} />
+            <FileDropZone
+              onUpload={handleFileUpload}
+              isUploading={isProcessing}
+              onOpenMapper={(file) => setMapperFile(file)}
+            />
           ) : (
             <RawTextPaste onImport={handleTextImport} isImporting={isProcessing} />
           )}
         </CardContent>
       </Card>
+
+      {/* Interactive Column Mapping Modal for CSV & Excel */}
+      <ColumnMapperModal
+        isOpen={!!mapperFile}
+        file={mapperFile}
+        onClose={() => setMapperFile(null)}
+        onConfirm={handleConfirmMapping}
+        isUploading={isProcessing}
+      />
     </div>
   );
 };

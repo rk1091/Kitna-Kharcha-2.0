@@ -39,7 +39,7 @@ export const Sidebar: React.FC = () => {
   const userInitial = (user?.name || user?.email || 'U').charAt(0).toUpperCase();
 
   return (
-    <aside className="w-64 border-r border-border bg-card/60 backdrop-blur flex flex-col h-screen sticky top-0 shrink-0 select-none">
+    <aside className="hidden md:flex w-64 border-r border-border bg-card/60 backdrop-blur flex-col h-screen sticky top-0 shrink-0 select-none">
       {/* Brand Header */}
       <div className="p-5 border-b border-border flex items-center justify-between">
         <div className="flex items-center gap-2.5">

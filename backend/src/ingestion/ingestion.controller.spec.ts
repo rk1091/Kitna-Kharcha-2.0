@@ -34,6 +34,18 @@ describe('IngestionController', () => {
     expect(mockIngestionService.handleFileUpload).toHaveBeenCalledWith('user-1', file, 'pass123');
   });
 
+  it('should upload statement with custom column mapping', async () => {
+    const file = { buffer: Buffer.from('test') } as Express.Multer.File;
+    const req = { user: { id: 'user-1' } } as any;
+    const mapping = '{"date":0,"description":1,"amount":2}';
+
+    mockIngestionService.handleFileUpload.mockResolvedValue('success');
+
+    const result = await controller.uploadStatement(file, undefined, req, mapping);
+    expect(result).toBe('success');
+    expect(mockIngestionService.handleFileUpload).toHaveBeenCalledWith('user-1', file, undefined, mapping);
+  });
+
   it('should throw if no file', async () => {
     const req = { user: { id: 'user-1' } } as any;
     
