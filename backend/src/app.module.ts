@@ -15,6 +15,7 @@ import { RecurringModule } from './recurring/recurring.module';
 import { BudgetModule } from './budgets/budget.module';
 import { InsightsModule } from './insights/insights.module';
 import { AnalyticsModule } from './analytics/analytics.module';
+import { ExportModule } from './export/export.module';
 
 import { BullModule } from '@nestjs/bullmq';
 
@@ -50,6 +51,7 @@ const redisUrl = process.env.REDIS_URL;
     BudgetModule,
     InsightsModule,
     AnalyticsModule,
+    ExportModule,
   ],
 })
 export class AppModule {}

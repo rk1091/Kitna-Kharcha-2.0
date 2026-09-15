@@ -15,6 +15,7 @@ import {
   ArrowDownLeft,
   ArrowUpRight,
   Tag as TagIcon,
+  Download,
 } from 'lucide-react';
 import {
   TransactionEditDrawer,
@@ -23,6 +24,7 @@ import {
 } from '@/components/transactions/TransactionEditDrawer';
 import { TransactionTable } from '@/components/transactions/TransactionTable';
 import { TagBadge } from '@/components/ui/TagBadge';
+import { ExportModal } from '@/components/export/ExportModal';
 
 interface StatementOption {
   id: string;
@@ -57,6 +59,7 @@ export const TransactionsPage: React.FC = () => {
   // Drawer State
   const [editingTransaction, setEditingTransaction] = useState<EditableTransaction | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [exportModalOpen, setExportModalOpen] = useState(false);
 
   // Synchronize URL param with filter state
   useEffect(() => {
@@ -266,6 +269,16 @@ export const TransactionsPage: React.FC = () => {
             <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
             <span>Refresh</span>
           </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setExportModalOpen(true)}
+            className="h-8 gap-1.5 text-xs font-medium border-border hover:bg-muted"
+          >
+            <Download className="h-3.5 w-3.5 text-primary" />
+            <span>Export</span>
+          </Button>
         </div>
       </div>
 
@@ -455,6 +468,13 @@ export const TransactionsPage: React.FC = () => {
           setEditingTransaction(null);
         }}
         onSave={handleSaveTransaction}
+      />
+
+      {/* Multi-Format Export Modal (Task E1) */}
+      <ExportModal
+        isOpen={exportModalOpen}
+        onClose={() => setExportModalOpen(false)}
+        categories={categories}
       />
     </div>
   );

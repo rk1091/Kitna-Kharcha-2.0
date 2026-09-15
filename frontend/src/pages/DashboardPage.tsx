@@ -15,6 +15,7 @@ import { SunburstSpendingChart, SunburstCategoryItem } from '@/components/charts
 import { CashFlowComparison } from '@/components/dashboard/CashFlowComparison';
 import { ExecutiveSummaryHeader } from '@/components/dashboard/ExecutiveSummaryHeader';
 import { CategoryDrilldownModal } from '@/components/transactions/CategoryDrilldownModal';
+import { ExportModal } from '@/components/export/ExportModal';
 
 interface Category {
   id: string;
@@ -48,6 +49,7 @@ export const DashboardPage: React.FC = () => {
   const [dateRange, setDateRange] = useState<DateRangeOption>('all_time');
   const [chartMode, setChartMode] = useState<'sunburst' | 'donut'>('sunburst');
   const [drilldownCategory, setDrilldownCategory] = useState<string | null>(null);
+  const [exportModalOpen, setExportModalOpen] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -369,6 +371,7 @@ export const DashboardPage: React.FC = () => {
             ? 'year-to-date'
             : 'all time'
         }
+        onOpenExport={() => setExportModalOpen(true)}
       />
 
       {/* Proactive Intelligence Insights Feed */}
@@ -552,6 +555,13 @@ export const DashboardPage: React.FC = () => {
         isOpen={!!drilldownCategory}
         onClose={() => setDrilldownCategory(null)}
         transactions={transactions}
+      />
+
+      {/* Multi-Format Financial Data Export Modal (Task E1) */}
+      <ExportModal
+        isOpen={exportModalOpen}
+        onClose={() => setExportModalOpen(false)}
+        categories={categoryChartData.map((c) => ({ id: c.name, name: c.name }))}
       />
     </div>
   );

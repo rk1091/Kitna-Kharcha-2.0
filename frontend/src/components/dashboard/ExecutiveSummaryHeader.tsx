@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Sparkles, UploadCloud, Calendar, Zap, PiggyBank } from 'lucide-react';
+import { Sparkles, UploadCloud, Calendar, Zap, PiggyBank, Download } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
@@ -13,6 +13,7 @@ interface ExecutiveSummaryHeaderProps {
   topCategoryPercentage?: number;
   topMerchantName?: string;
   dateRangeLabel?: string;
+  onOpenExport?: () => void;
 }
 
 export const ExecutiveSummaryHeader: React.FC<ExecutiveSummaryHeaderProps> = ({
@@ -24,6 +25,7 @@ export const ExecutiveSummaryHeader: React.FC<ExecutiveSummaryHeaderProps> = ({
   topCategoryPercentage,
   topMerchantName,
   dateRangeLabel = 'all time',
+  onOpenExport,
 }) => {
   const navigate = useNavigate();
 
@@ -140,6 +142,18 @@ export const ExecutiveSummaryHeader: React.FC<ExecutiveSummaryHeaderProps> = ({
             <PiggyBank className="h-3.5 w-3.5 text-emerald-500" />
             <span>Budgets</span>
           </Button>
+
+          {onOpenExport && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={onOpenExport}
+              className="h-8 text-xs font-medium gap-1.5 border-border hover:bg-muted"
+            >
+              <Download className="h-3.5 w-3.5 text-primary" />
+              <span>Export</span>
+            </Button>
+          )}
         </div>
       </div>
     </div>
