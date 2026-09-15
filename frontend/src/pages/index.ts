@@ -1,0 +1,10 @@
+export { DashboardPage } from './DashboardPage';
+export { TransactionsPage } from './TransactionsPage';
+export { StatementsPage } from './StatementsPage';
+export { RulesPage } from './RulesPage';
+export { UploadPage } from './UploadPage';
+export { RecurringPage } from './RecurringPage';
+export { BudgetsPage } from './BudgetsPage';
+export { InsightsPage } from './InsightsPage';
+export { SettingsPage } from './SettingsPage';
+export { LoginPage } from './LoginPage';
