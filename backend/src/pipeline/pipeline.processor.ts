@@ -8,6 +8,8 @@ import { CurrencyService } from '../currency/currency.service';
 import { ClassificationService } from '../classification/classification.service';
 import { Injectable, Logger } from '@nestjs/common';
 import { Direction, Transaction, ClassificationReason } from '@prisma/client';
+import * as fs from 'fs';
+import * as crypto from 'crypto';
 
 @Injectable()
 @Processor('statements')
@@ -40,7 +42,6 @@ export class PipelineProcessor extends WorkerHost {
 
     try {
       // 2. Read file
-      const fs = require('fs');
       let fileContent = '';
       
       if (statement.inputType === 'PDF') {
@@ -53,7 +54,6 @@ export class PipelineProcessor extends WorkerHost {
       }
 
       // 2.5 Deduplication Check (Smart Cache)
-      const crypto = require('crypto');
       const fileHash = crypto.createHash('sha256').update(fileContent).digest('hex');
       
       const existingUpload = await this.prisma.statementUpload.findFirst({

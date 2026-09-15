@@ -9,6 +9,10 @@ import { Job } from 'bullmq';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { Decimal } from '@prisma/client/runtime/library';
 
+import * as fs from 'fs';
+
+vi.mock('fs');
+
 describe('PipelineProcessor', () => {
   let processor: PipelineProcessor;
   let prisma: PrismaService;
@@ -19,13 +23,18 @@ describe('PipelineProcessor', () => {
   let classificationService: ClassificationService;
 
   beforeEach(() => {
+    vi.spyOn(fs, 'readFileSync').mockReturnValue('mock statement text' as any);
+
     prisma = {
       statementUpload: {
         findUnique: vi.fn().mockResolvedValue({
           id: 'upload123',
           userId: 'user123',
+          filePath: '/mock/path/statement.txt',
+          inputType: 'TEXT',
           user: { defaultCurrency: 'INR' },
         }),
+        findFirst: vi.fn().mockResolvedValue(null),
         update: vi.fn(),
       },
       classificationRule: {
@@ -87,7 +96,7 @@ describe('PipelineProcessor', () => {
   });
 
   it('should process job correctly', async () => {
-    const job = { data: { uploadId: 'upload123' } } as Job;
+    const job = { data: { uploadId: 'upload123', text: 'Test statement content' } } as Job;
     await processor.process(job);
 
     expect(prisma.statementUpload.findUnique).toHaveBeenCalled();
@@ -99,7 +108,11 @@ describe('PipelineProcessor', () => {
     expect(prisma.transaction.create).toHaveBeenCalled();
     expect(prisma.statementUpload.update).toHaveBeenCalledWith({
       where: { id: 'upload123' },
-      data: { parseStatus: 'COMPLETED', healthScore: 100 },
+      data: {
+        parseStatus: 'COMPLETED',
+        healthScore: 100,
+        contentFingerprint: expect.any(String),
+      },
     });
   });
 });

@@ -26,12 +26,12 @@ describe('LlmFallbackStrategy', () => {
 
     (llmServiceMock.generateStructured as any).mockResolvedValue(fakeResult);
 
-    const result = await strategy.parse('Some random statement text');
+    const result = await strategy.parse('Some random statement text with txn 100 on 2023-10-01');
 
     expect(llmServiceMock.generateStructured).toHaveBeenCalled();
     const args = (llmServiceMock.generateStructured as any).mock.calls[0][0];
     
-    expect(args.prompt).toContain('Some random statement text');
+    expect(args.prompt).toContain('Some random statement text with txn 100 on 2023-10-01');
     expect(args.systemInstruction).toContain('masked');
     expect(result.transactions[0].amount).toBe(500);
     expect(result.bankName).toBe('UnknownBank');
@@ -50,7 +50,7 @@ describe('LlmFallbackStrategy', () => {
 
     (llmServiceMock.generateStructured as any).mockResolvedValue(fakeResult);
 
-    const result = await strategy.parse('Some random statement text');
+    const result = await strategy.parse('Some random statement text with txn 100 on 2023-10-01');
     
     expect(result.transactions[0].date).toBeInstanceOf(Date);
   });
