@@ -7,6 +7,7 @@ export interface TransactionFilters {
   categoryId?: string;
   direction?: 'CREDIT' | 'DEBIT';
   search?: string;
+  tag?: string;
   startDate?: string;
   endDate?: string;
   limit?: number;
@@ -32,6 +33,10 @@ export class TransactionsService {
 
     if (filters?.direction) {
       where.direction = filters.direction as Direction;
+    }
+
+    if (filters?.tag) {
+      where.tags = { has: filters.tag };
     }
 
     if (filters?.startDate || filters?.endDate) {
@@ -191,5 +196,19 @@ export class TransactionsService {
     return this.prisma.category.findMany({
       orderBy: { name: 'asc' },
     });
+  }
+
+  async getAllTags(userId: string): Promise<string[]> {
+    const txns = await this.prisma.transaction.findMany({
+      where: { statement: { userId } },
+      select: { tags: true },
+    });
+    const tagSet = new Set<string>();
+    txns.forEach((t) => {
+      if (Array.isArray(t.tags)) {
+        t.tags.forEach((tag) => tagSet.add(tag));
+      }
+    });
+    return Array.from(tagSet).sort();
   }
 }

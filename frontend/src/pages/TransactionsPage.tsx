@@ -14,6 +14,7 @@ import {
   Filter,
   ArrowDownLeft,
   ArrowUpRight,
+  Tag as TagIcon,
 } from 'lucide-react';
 import {
   TransactionEditDrawer,
@@ -21,6 +22,7 @@ import {
   EditableTransaction,
 } from '@/components/transactions/TransactionEditDrawer';
 import { TransactionTable } from '@/components/transactions/TransactionTable';
+import { TagBadge } from '@/components/ui/TagBadge';
 
 interface StatementOption {
   id: string;
@@ -40,6 +42,8 @@ export const TransactionsPage: React.FC = () => {
   // Filters State
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
+  const [selectedTag, setSelectedTag] = useState('');
+  const [availableTags, setAvailableTags] = useState<string[]>([]);
   const [filterDirection, setFilterDirection] = useState<'ALL' | 'DEBIT' | 'CREDIT'>('ALL');
   const [selectedStatementId, setSelectedStatementId] = useState(statementIdParam);
 
@@ -65,6 +69,7 @@ export const TransactionsPage: React.FC = () => {
       const params: Record<string, any> = {};
       if (selectedStatementId) params.statementId = selectedStatementId;
       if (selectedCategory) params.categoryId = selectedCategory;
+      if (selectedTag) params.tag = selectedTag;
       if (filterDirection !== 'ALL') params.direction = filterDirection;
       if (searchQuery.trim()) params.search = searchQuery.trim();
 
@@ -78,18 +83,20 @@ export const TransactionsPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [selectedStatementId, selectedCategory, filterDirection, searchQuery]);
+  }, [selectedStatementId, selectedCategory, selectedTag, filterDirection, searchQuery]);
 
   const fetchCategoriesAndStatements = useCallback(async () => {
     try {
-      const [catsRes, stmtsRes] = await Promise.all([
+      const [catsRes, stmtsRes, tagsRes] = await Promise.all([
         apiClient.get<CategoryOption[]>('/transactions/categories/all'),
         apiClient.get<StatementOption[]>('/statements'),
+        apiClient.get<string[]>('/transactions/tags/all'),
       ]);
       setCategories(catsRes.data || []);
       setStatements(stmtsRes.data || []);
+      setAvailableTags(tagsRes.data || []);
     } catch (err) {
-      console.error('Failed to load categories/statements metadata:', err);
+      console.error('Failed to load categories/statements/tags metadata:', err);
     }
   }, []);
 
@@ -297,7 +304,25 @@ export const TransactionsPage: React.FC = () => {
             </div>
           )}
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          {/* Active Tag Filter Pill */}
+          {selectedTag && (
+            <div className="flex items-center gap-2 text-xs p-2 rounded-lg bg-primary/10 border border-primary/20 text-foreground animate-in fade-in">
+              <TagIcon className="h-3.5 w-3.5 text-primary" />
+              <span className="flex items-center gap-1.5">
+                Filtered by tag: <TagBadge tag={selectedTag} />
+              </span>
+              <button
+                type="button"
+                onClick={() => setSelectedTag('')}
+                className="ml-auto p-1 rounded-md text-muted-foreground hover:text-foreground"
+                title="Clear tag filter"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
             {/* Search Input */}
             <div className="relative">
               <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
@@ -319,6 +344,20 @@ export const TransactionsPage: React.FC = () => {
               {categories.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
+                </option>
+              ))}
+            </select>
+
+            {/* Tag Filter */}
+            <select
+              value={selectedTag}
+              onChange={(e) => setSelectedTag(e.target.value)}
+              className="h-9 px-3 rounded-md border border-input bg-background text-foreground text-xs shadow-xs"
+            >
+              <option value="">All Tags ({availableTags.length})</option>
+              {availableTags.map((tag) => (
+                <option key={tag} value={tag}>
+                  #{tag}
                 </option>
               ))}
             </select>
@@ -364,22 +403,22 @@ export const TransactionsPage: React.FC = () => {
                 onClick={() => setFilterDirection('DEBIT')}
                 className={`flex-1 py-1 rounded text-[11px] font-medium transition-colors ${
                   filterDirection === 'DEBIT'
-                    ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400 font-semibold'
+                    ? 'bg-card text-foreground shadow-xs font-semibold'
                     : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
-                Expenses
+                Debits
               </button>
               <button
                 type="button"
                 onClick={() => setFilterDirection('CREDIT')}
                 className={`flex-1 py-1 rounded text-[11px] font-medium transition-colors ${
                   filterDirection === 'CREDIT'
-                    ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-semibold'
+                    ? 'bg-card text-foreground shadow-xs font-semibold'
                     : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
-                Income
+                Credits
               </button>
             </div>
           </div>

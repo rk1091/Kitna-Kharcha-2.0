@@ -11,6 +11,10 @@ import { CurrencyModule } from './currency/currency.module';
 import { PipelineModule } from './pipeline/pipeline.module';
 import { TransactionsModule } from './transactions/transactions.module';
 import { CopilotModule } from './copilot/copilot.module';
+import { RecurringModule } from './recurring/recurring.module';
+import { BudgetModule } from './budgets/budget.module';
+import { InsightsModule } from './insights/insights.module';
+import { AnalyticsModule } from './analytics/analytics.module';
 
 import { BullModule } from '@nestjs/bullmq';
 
@@ -42,6 +46,10 @@ const redisUrl = process.env.REDIS_URL;
     PipelineModule,
     TransactionsModule,
     CopilotModule,
+    RecurringModule,
+    BudgetModule,
+    InsightsModule,
+    AnalyticsModule,
   ],
 })
 export class AppModule {}

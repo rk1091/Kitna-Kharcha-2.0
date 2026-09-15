@@ -7,14 +7,20 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { UploadCloud, ChevronRight, Sparkles, Calendar, Receipt } from 'lucide-react';
 import { KPICards } from '@/components/dashboard/KPICards';
+import { InsightsPanel } from '@/components/dashboard/InsightsPanel';
 import { CategoryPieChart } from '@/components/dashboard/CategoryPieChart';
 import { MonthlyTrendBar, MonthlyTrendData } from '@/components/dashboard/MonthlyTrendBar';
 import { TopMerchantsList, TopMerchantItem } from '@/components/dashboard/TopMerchantsList';
+import { SunburstSpendingChart, SunburstCategoryItem } from '@/components/charts/SunburstSpendingChart';
+import { CashFlowComparison } from '@/components/dashboard/CashFlowComparison';
+import { CategoryDrilldownModal } from '@/components/transactions/CategoryDrilldownModal';
 
 interface Category {
   id: string;
   name: string;
   type?: string;
+  color?: string | null;
+  colorHex?: string;
 }
 
 interface Transaction {
@@ -39,6 +45,8 @@ export const DashboardPage: React.FC = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [dateRange, setDateRange] = useState<DateRangeOption>('all_time');
+  const [chartMode, setChartMode] = useState<'sunburst' | 'donut'>('sunburst');
+  const [drilldownCategory, setDrilldownCategory] = useState<string | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -133,6 +141,68 @@ export const DashboardPage: React.FC = () => {
     return Object.entries(categoryMap)
       .map(([name, value]) => ({ name, value }))
       .sort((a, b) => b.value - a.value);
+  }, [filteredTransactions]);
+
+  // Hierarchical Sunburst Category & Merchant Data
+  const sunburstData: SunburstCategoryItem[] = useMemo(() => {
+    const categoryGroupMap: Record<
+      string,
+      {
+        name: string;
+        value: number;
+        color?: string;
+        merchantMap: Record<string, number>;
+      }
+    > = {};
+
+    filteredTransactions
+      .filter((t) => t.direction === 'DEBIT')
+      .forEach((t) => {
+        const catName = t.category?.name || 'Uncategorized';
+        const amt = Math.abs(Number(t.amountSigned) || 0);
+        const merchant =
+          t.normalizedDescription ||
+          (t.maskedDescription && !t.maskedDescription.includes('XXXX')
+            ? t.maskedDescription
+            : null) ||
+          t.description ||
+          'Other';
+
+        if (!categoryGroupMap[catName]) {
+          categoryGroupMap[catName] = {
+            name: catName,
+            value: 0,
+            color: t.category?.color || t.category?.colorHex,
+            merchantMap: {},
+          };
+        }
+
+        categoryGroupMap[catName].value += amt;
+        categoryGroupMap[catName].merchantMap[merchant] =
+          (categoryGroupMap[catName].merchantMap[merchant] || 0) + amt;
+      });
+
+    return Object.values(categoryGroupMap)
+      .sort((a, b) => b.value - a.value)
+      .map((cat) => {
+        const sortedMerchants = Object.entries(cat.merchantMap)
+          .sort((a, b) => b[1] - a[1])
+          .map(([mName, mVal]) => ({ name: mName, value: mVal }));
+
+        const topMerchants = sortedMerchants.slice(0, 4);
+        const rest = sortedMerchants.slice(4);
+        if (rest.length > 0) {
+          const otherTotal = rest.reduce((sum, item) => sum + item.value, 0);
+          topMerchants.push({ name: 'Other', value: otherTotal });
+        }
+
+        return {
+          name: cat.name,
+          value: cat.value,
+          color: cat.color,
+          merchants: topMerchants,
+        };
+      });
   }, [filteredTransactions]);
 
   // Monthly Trend Data
@@ -276,6 +346,9 @@ export const DashboardPage: React.FC = () => {
         </div>
       </div>
 
+      {/* Proactive Intelligence Insights Feed */}
+      <InsightsPanel />
+
       {/* KPI Cards Grid */}
       <KPICards
         totalIncome={totalIncome}
@@ -286,15 +359,56 @@ export const DashboardPage: React.FC = () => {
         categorizedCount={categorizedCount}
       />
 
+      {/* Cash Flow Dynamics & Inflows/Outflows Comparison */}
+      <CashFlowComparison transactions={filteredTransactions} />
+
       {/* Analytics Visualization Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Category Breakdown Donut */}
-        <div className="lg:col-span-1">
-          <CategoryPieChart data={categoryChartData} />
+        {/* Category Breakdown (Sunburst vs Donut) */}
+        <div className="lg:col-span-1 space-y-2">
+          <div className="flex items-center justify-between px-1">
+            <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+              Category Distribution
+            </span>
+            <div className="flex items-center bg-muted/60 p-0.5 rounded-lg border border-border">
+              <button
+                type="button"
+                onClick={() => setChartMode('sunburst')}
+                className={`px-2 py-0.5 text-[10px] font-medium rounded-md transition-colors ${
+                  chartMode === 'sunburst'
+                    ? 'bg-card text-foreground shadow-xs font-semibold'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                Sunburst
+              </button>
+              <button
+                type="button"
+                onClick={() => setChartMode('donut')}
+                className={`px-2 py-0.5 text-[10px] font-medium rounded-md transition-colors ${
+                  chartMode === 'donut'
+                    ? 'bg-card text-foreground shadow-xs font-semibold'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                Donut
+              </button>
+            </div>
+          </div>
+
+          {chartMode === 'sunburst' ? (
+            <SunburstSpendingChart
+              data={sunburstData}
+              totalExpense={totalExpense}
+              onCategoryDrilldown={(cat) => setDrilldownCategory(cat)}
+            />
+          ) : (
+            <CategoryPieChart data={categoryChartData} />
+          )}
         </div>
 
         {/* Monthly Trend Bars */}
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-2 pt-6 lg:pt-0">
           <MonthlyTrendBar data={monthlyTrendData} />
         </div>
       </div>
@@ -406,6 +520,14 @@ export const DashboardPage: React.FC = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Category Sub-Breakdown Drilldown Modal (Task C4) */}
+      <CategoryDrilldownModal
+        categoryName={drilldownCategory}
+        isOpen={!!drilldownCategory}
+        onClose={() => setDrilldownCategory(null)}
+        transactions={transactions}
+      />
     </div>
   );
 };

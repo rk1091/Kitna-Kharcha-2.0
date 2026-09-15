@@ -1,11 +1,11 @@
 # Kitna Kharcha 2.0 — Execution Progress Ledger
 
-- **Active Phase:** Phase A (Foundation & Critical Fixes)
+- **Active Phase:** Phase C (Unified Tags, Advanced Visuals & Copilot UX)
 - **Active Branch:** dev/v2-execution
-- **Last Completed Task:** Checkpoint A: Full Foundation E2E Test Suite Passing (Tasks A1-A12 Complete)
-- **Next Task:** B1: Recurring Transaction & Subscription Detection (`recurring.service.ts`)
+- **Last Completed Task:** Checkpoint B: Intelligence & Copilot E2E Test Suite Passing (Tasks B1-B8 Complete)
+- **Next Task:** C1: Unified Category + Colorful Tag System (`TagBadge.tsx`, `schema.prisma`)
 - **Pending Blocker:** None
-- **User Action Required:** Commit Phase A foundation completion (`git add . && git commit`)
+- **User Action Required:** Commit Phase B intelligence engine completion (`git add . && git commit`)
 
 ---
 
@@ -30,15 +30,15 @@
 - [x] **Checkpoint A:** Full Foundation E2E Test Suite Passing
 
 ### Phase B: Intelligence Engine & Copilot (`feat/intelligence`)
-- [ ] **B1:** Recurring Transaction & Subscription Detection (`recurring.service.ts`)
-- [ ] **B2:** Implement All 8 Copilot Tools (`copilot.service.ts`)
-- [ ] **B3:** Budget Management & Real-Time Alerting (`budget.service.ts`)
-- [ ] **B4:** Proactive Financial Insights Engine (`insights.service.ts`)
-- [ ] **B5:** Advanced Trend Analysis Aggregations (`analytics.service.ts`)
-- [ ] **B6:** Build Recurring Subscriptions & EMIs Page (`RecurringPage.tsx`)
-- [ ] **B7:** Build Budgets Page with AI Recommender (`BudgetsPage.tsx`)
-- [ ] **B8:** Proactive Insights Dashboard Widget (`InsightsPanel.tsx`)
-- [ ] **Checkpoint B:** Intelligence & Copilot E2E Test Suite Passing
+- [x] **B1:** Recurring Transaction & Subscription Detection (`recurring.service.ts`)
+- [x] **B2:** Implement All 8 Copilot Tools (`copilot.service.ts`)
+- [x] **B3:** Budget Management & Real-Time Alerting (`budget.service.ts`)
+- [x] **B4:** Proactive Financial Insights Engine (`insights.service.ts`)
+- [x] **B5:** Advanced Trend Analysis Aggregations (`analytics.service.ts`)
+- [x] **B6:** Build Recurring Subscriptions & EMIs Page (`RecurringPage.tsx`)
+- [x] **B7:** Build Budgets Page with AI Recommender (`BudgetsPage.tsx`)
+- [x] **B8:** Proactive Insights Dashboard Widget (`InsightsPanel.tsx`)
+- [x] **Checkpoint B:** Intelligence & Copilot E2E Test Suite Passing
 
 ### Phase C: Unified Tags, Advanced Visuals & Copilot UX (`feat/ux-and-visuals`)
 - [ ] **C1:** Unified Category + Colorful Tag System (`TagBadge.tsx`, `schema.prisma`)

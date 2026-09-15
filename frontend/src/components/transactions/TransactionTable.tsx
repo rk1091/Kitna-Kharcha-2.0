@@ -14,6 +14,8 @@ import {
   MinusSquare,
 } from 'lucide-react';
 import { CategoryOption, EditableTransaction } from './TransactionEditDrawer';
+import { TagBadge } from '@/components/ui/TagBadge';
+import { CategoryBadge } from '@/components/ui/CategoryBadge';
 
 interface TransactionTableProps {
   transactions: EditableTransaction[];
@@ -211,31 +213,30 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
 
                     {/* Category */}
                     <TableCell>
-                      <Badge
-                        variant={t.category ? 'secondary' : 'outline'}
-                        className="text-[10px] font-medium"
-                      >
-                        {t.category ? t.category.name : 'Uncategorized'}
-                      </Badge>
+                      {t.category ? (
+                        <CategoryBadge
+                          name={t.category.name}
+                          color={t.category.color || t.category.colorHex}
+                        />
+                      ) : (
+                        <Badge variant="outline" className="text-[10px] font-medium text-muted-foreground">
+                          Uncategorized
+                        </Badge>
+                      )}
                     </TableCell>
 
                     {/* Tags */}
                     <TableCell className="hidden md:table-cell">
-                      <div className="flex flex-wrap gap-1 max-w-[150px]">
+                      <div className="flex flex-wrap gap-1 max-w-[170px]">
                         {t.tags && t.tags.length > 0 ? (
                           t.tags.slice(0, 2).map((tag) => (
-                            <span
-                              key={tag}
-                              className="px-1.5 py-0.2 rounded bg-muted text-muted-foreground font-mono text-[9px]"
-                            >
-                              #{tag}
-                            </span>
+                            <TagBadge key={tag} tag={tag} size="sm" />
                           ))
                         ) : (
                           <span className="text-muted-foreground/40 text-[10px]">—</span>
                         )}
                         {t.tags && t.tags.length > 2 && (
-                          <span className="text-[9px] text-muted-foreground font-bold">
+                          <span className="text-[9px] text-muted-foreground font-bold self-center">
                             +{t.tags.length - 2}
                           </span>
                         )}

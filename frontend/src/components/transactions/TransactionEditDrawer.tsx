@@ -2,14 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import { X, Tag as TagIcon, Check, Store, Layers } from 'lucide-react';
+import { TagBadge } from '@/components/ui/TagBadge';
+import { CategoryBadge } from '@/components/ui/CategoryBadge';
 
 export interface CategoryOption {
   id: string;
   name: string;
   type?: string;
+  color?: string | null;
   colorHex?: string;
+  icon?: string | null;
 }
 
 export interface EditableTransaction {
@@ -52,6 +55,8 @@ export const TransactionEditDrawer: React.FC<TransactionEditDrawerProps> = ({
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+
+  const selectedCategoryObj = categories.find((c) => c.id === selectedCategoryId);
 
   useEffect(() => {
     if (transaction) {
@@ -182,10 +187,18 @@ export const TransactionEditDrawer: React.FC<TransactionEditDrawerProps> = ({
 
             {/* Category Dropdown */}
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
-                <Layers className="h-3.5 w-3.5 text-primary" />
-                Category
-              </label>
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                  <Layers className="h-3.5 w-3.5 text-primary" />
+                  Category
+                </label>
+                {selectedCategoryObj && (
+                  <CategoryBadge
+                    name={selectedCategoryObj.name}
+                    color={selectedCategoryObj.color || selectedCategoryObj.colorHex}
+                  />
+                )}
+              </div>
               <select
                 value={selectedCategoryId}
                 onChange={(e) => setSelectedCategoryId(e.target.value)}
@@ -204,7 +217,7 @@ export const TransactionEditDrawer: React.FC<TransactionEditDrawerProps> = ({
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
                 <TagIcon className="h-3.5 w-3.5 text-primary" />
-                Custom Tags
+                Custom Colorful Tags
               </label>
               <div className="flex items-center gap-2">
                 <Input
@@ -225,26 +238,35 @@ export const TransactionEditDrawer: React.FC<TransactionEditDrawerProps> = ({
                 </Button>
               </div>
 
+              {/* Quick Tag Suggestions */}
+              <div className="flex flex-wrap items-center gap-1 pt-0.5">
+                <span className="text-[10px] text-muted-foreground mr-1">Quick Add:</span>
+                {['tax-deductible', 'reimbursable', 'impulse', 'essential', 'investment', 'family']
+                  .filter((suggestion) => !tags.includes(suggestion))
+                  .slice(0, 4)
+                  .map((suggestion) => (
+                    <button
+                      key={suggestion}
+                      type="button"
+                      onClick={() => setTags([...tags, suggestion])}
+                      className="text-[10px] px-2 py-0.5 rounded-full border border-dashed border-border hover:border-primary/50 text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      +{suggestion}
+                    </button>
+                  ))}
+              </div>
+
               {/* Tag Pills */}
               <div className="flex flex-wrap gap-1.5 pt-1 min-h-[32px]">
                 {tags.length === 0 ? (
                   <span className="text-[11px] text-muted-foreground italic">No tags attached</span>
                 ) : (
                   tags.map((tag) => (
-                    <Badge
+                    <TagBadge
                       key={tag}
-                      variant="secondary"
-                      className="gap-1 pl-2 pr-1 py-0.5 text-[10px] font-medium bg-primary/10 text-primary border-primary/20"
-                    >
-                      #{tag}
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveTag(tag)}
-                        className="hover:text-destructive p-0.5 rounded"
-                      >
-                        <X className="h-2.5 w-2.5" />
-                      </button>
-                    </Badge>
+                      tag={tag}
+                      onRemove={() => handleRemoveTag(tag)}
+                    />
                   ))
                 )}
               </div>

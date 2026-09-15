@@ -36,6 +36,12 @@ export class TransactionsController {
     return this.transactionsService.getCategories();
   }
 
+  @Get('tags/all')
+  async getTags(@Req() req: Request) {
+    const userId = (req as any).user?.id || 'cmtve5piy0000l5jm13ng5ut5';
+    return this.transactionsService.getAllTags(userId);
+  }
+
   @Patch(':id')
   async updateTransaction(
     @Param('id') id: string,
