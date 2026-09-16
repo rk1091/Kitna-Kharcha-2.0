@@ -30,6 +30,9 @@ jobs:
       - name: Run Backend Tests
         run: cd backend && npm test
 
+      - name: Run Backend E2E Tests
+        run: cd backend && npm run test:e2e
+
       - name: Build Backend Application
         run: cd backend && npm run build
 
