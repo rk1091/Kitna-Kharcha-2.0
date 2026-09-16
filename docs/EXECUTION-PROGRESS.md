@@ -50,7 +50,7 @@
 - [x] **Checkpoint B:** Intelligence & Copilot E2E Test Suite Passing (Commit `d95c3e4`)
 
 ### Phase C: Unified Tags, Advanced Visuals & Copilot UX (`feat/ux-and-visuals`)
-- [x] **C1:** Unified Category + Colorful Tag System (`TagBadge.tsx`, `schema.prisma`)
+- [x] **C1:** Unified Category + Colorful Tag System (`TagBadge.tsx`)
 - [x] **C2:** Sunburst Hierarchical Category-Merchant Chart (`SunburstSpendingChart.tsx`)
 - [x] **C3:** Income & Cash Flow Visualization (`CashFlowComparison.tsx`)
 - [x] **C4:** Category Sub-Breakdown Modal (`CategoryDrilldownModal.tsx`)
