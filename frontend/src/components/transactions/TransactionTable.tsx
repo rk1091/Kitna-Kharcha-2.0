@@ -16,6 +16,8 @@ import {
 import { CategoryOption, EditableTransaction } from './TransactionEditDrawer';
 import { TagBadge } from '@/components/ui/TagBadge';
 import { CategoryBadge } from '@/components/ui/CategoryBadge';
+import { Skeleton } from '@/components/ui/Skeleton';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 interface TransactionTableProps {
   transactions: EditableTransaction[];
@@ -146,15 +148,20 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
           </TableHeader>
           <TableBody>
             {loading ? (
-              <TableRow>
-                <TableCell colSpan={8} className="h-40 text-center text-xs text-muted-foreground">
-                  Loading transactions ledger...
-                </TableCell>
-              </TableRow>
+              Array.from({ length: 5 }).map((_, idx) => (
+                <TableRow key={idx}>
+                  <TableCell colSpan={8} className="py-3 px-4">
+                    <Skeleton className="h-6 w-full" />
+                  </TableCell>
+                </TableRow>
+              ))
             ) : currentTransactions.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="h-40 text-center text-xs text-muted-foreground">
-                  No transactions match the selected filters.
+                <TableCell colSpan={8} className="p-8">
+                  <EmptyState
+                    title="No transactions found"
+                    description="No transactions match the selected filters."
+                  />
                 </TableCell>
               </TableRow>
             ) : (

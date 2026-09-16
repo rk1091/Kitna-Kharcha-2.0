@@ -16,6 +16,8 @@ import { CashFlowComparison } from '@/components/dashboard/CashFlowComparison';
 import { ExecutiveSummaryHeader } from '@/components/dashboard/ExecutiveSummaryHeader';
 import { CategoryDrilldownModal } from '@/components/transactions/CategoryDrilldownModal';
 import { ExportModal } from '@/components/export/ExportModal';
+import { Skeleton } from '@/components/ui/Skeleton';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 interface Category {
   id: string;
@@ -469,22 +471,21 @@ export const DashboardPage: React.FC = () => {
           </CardHeader>
           <CardContent>
             {loading ? (
-              <div className="py-12 text-center text-xs text-muted-foreground">
-                Loading recent transactions...
+              <div className="space-y-2 py-4">
+                <Skeleton className="h-9 w-full" />
+                <Skeleton className="h-9 w-full" />
+                <Skeleton className="h-9 w-full" />
+                <Skeleton className="h-9 w-full" />
+                <Skeleton className="h-9 w-full" />
               </div>
             ) : recentTransactions.length === 0 ? (
-              <div className="py-12 text-center text-xs text-muted-foreground">
-                <Receipt className="h-8 w-8 mx-auto text-muted-foreground/50 mb-2" />
-                <p>No transactions found in this period</p>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="mt-3 text-xs"
-                  onClick={() => navigate('/upload')}
-                >
-                  Upload Statement
-                </Button>
-              </div>
+              <EmptyState
+                icon={<Receipt className="h-6 w-6 text-muted-foreground" />}
+                title="No transactions found"
+                description="No transactions found in this period. Upload a statement to get started."
+                actionLabel="Upload Statement"
+                onAction={() => navigate('/upload')}
+              />
             ) : (
               <div className="rounded-lg border border-border overflow-hidden">
                 <Table>
