@@ -1,37 +1,48 @@
 import { describe, it, expect } from 'vitest';
-import * as pages from './pages';
+import React from 'react';
+import { render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
 import { AppRoutes } from './routes';
+import * as pages from './pages';
 
-describe('React Router & Page Skeletons', () => {
-  it('should export all 10 required page components', () => {
-    expect(pages.DashboardPage).toBeDefined();
-    expect(pages.TransactionsPage).toBeDefined();
-    expect(pages.StatementsPage).toBeDefined();
-    expect(pages.RulesPage).toBeDefined();
-    expect(pages.UploadPage).toBeDefined();
-    expect(pages.RecurringPage).toBeDefined();
-    expect(pages.BudgetsPage).toBeDefined();
-    expect(pages.InsightsPage).toBeDefined();
-    expect(pages.SettingsPage).toBeDefined();
-    expect(pages.LoginPage).toBeDefined();
+describe('React Router & Application Routing Behavioral Tests', () => {
+  it('renders LoginPage when navigating to /login', () => {
+    render(
+      <MemoryRouter initialEntries={['/login']}>
+        <AuthProvider>
+          <AppRoutes />
+        </AuthProvider>
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText('Kitna Kharcha 2.0')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Sign In/i })).toBeInTheDocument();
   });
 
-  it('should define AppRoutes as a valid React component function', () => {
-    expect(AppRoutes).toBeDefined();
-    expect(typeof AppRoutes).toBe('function');
+  it('redirects unauthenticated unknown paths to login page', () => {
+    render(
+      <MemoryRouter initialEntries={['/non-existent-route']}>
+        <AuthProvider>
+          <AppRoutes />
+        </AuthProvider>
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText('Kitna Kharcha 2.0')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Sign In/i })).toBeInTheDocument();
   });
 
-  it('should contain all 10 expected page modules in the pages index', () => {
-    const exportedKeys = Object.keys(pages);
-    expect(exportedKeys).toContain('DashboardPage');
-    expect(exportedKeys).toContain('TransactionsPage');
-    expect(exportedKeys).toContain('StatementsPage');
-    expect(exportedKeys).toContain('RulesPage');
-    expect(exportedKeys).toContain('UploadPage');
-    expect(exportedKeys).toContain('RecurringPage');
-    expect(exportedKeys).toContain('BudgetsPage');
-    expect(exportedKeys).toContain('InsightsPage');
-    expect(exportedKeys).toContain('SettingsPage');
-    expect(exportedKeys).toContain('LoginPage');
+  it('exports all 10 modular page components as valid React components', () => {
+    expect(typeof pages.DashboardPage).toBe('function');
+    expect(typeof pages.TransactionsPage).toBe('function');
+    expect(typeof pages.StatementsPage).toBe('function');
+    expect(typeof pages.RulesPage).toBe('function');
+    expect(typeof pages.UploadPage).toBe('function');
+    expect(typeof pages.RecurringPage).toBe('function');
+    expect(typeof pages.BudgetsPage).toBe('function');
+    expect(typeof pages.InsightsPage).toBe('function');
+    expect(typeof pages.SettingsPage).toBe('function');
+    expect(typeof pages.LoginPage).toBe('function');
   });
 });

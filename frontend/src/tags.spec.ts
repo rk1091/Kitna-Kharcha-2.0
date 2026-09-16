@@ -1,23 +1,34 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
+import React from 'react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { TagBadge, getTagPalette } from './components/ui/TagBadge';
 import { CategoryBadge } from './components/ui/CategoryBadge';
 
-describe('TagBadge & CategoryBadge Component System', () => {
-  it('should export TagBadge and CategoryBadge components', () => {
-    expect(TagBadge).toBeDefined();
-    expect(typeof TagBadge).toBe('function');
+describe('TagBadge & CategoryBadge Component System Behavioral Tests', () => {
+  it('renders TagBadge with tag text and handles onRemove interaction', () => {
+    const onRemove = vi.fn();
+    render(<TagBadge tag="tax-deductible" onRemove={onRemove} />);
 
-    expect(CategoryBadge).toBeDefined();
-    expect(typeof CategoryBadge).toBe('function');
+    expect(screen.getByText('#tax-deductible')).toBeInTheDocument();
+
+    const removeBtn = screen.getByTitle('Remove tag #tax-deductible');
+    fireEvent.click(removeBtn);
+    expect(onRemove).toHaveBeenCalledTimes(1);
   });
 
-  it('should generate deterministic color classes for tags', () => {
-    const palette1 = getTagPalette('tax-deductible');
-    const palette2 = getTagPalette('tax-deductible');
+  it('generates deterministic color classes for identical tag names', () => {
+    const palette1 = getTagPalette('investments');
+    const palette2 = getTagPalette('investments');
     expect(palette1).toBe(palette2);
 
-    const palette3 = getTagPalette('impulse');
-    expect(typeof palette3).toBe('string');
-    expect(palette3.length).toBeGreaterThan(0);
+    const palette3 = getTagPalette('groceries');
+    expect(palette3).toContain('bg-');
+    expect(palette3).toContain('text-');
+  });
+
+  it('renders CategoryBadge with category name and custom color indicator', () => {
+    render(<CategoryBadge name="Dining Out" color="#10B981" />);
+
+    expect(screen.getByText('Dining Out')).toBeInTheDocument();
   });
 });

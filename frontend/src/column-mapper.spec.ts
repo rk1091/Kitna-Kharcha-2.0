@@ -1,4 +1,6 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
+import React from 'react';
+import { render } from '@testing-library/react';
 import {
   ColumnMapperModal,
   parseCSVPreview,
@@ -7,9 +9,11 @@ import {
 } from './components/upload/ColumnMapperModal';
 
 describe('Interactive Column Mapping (Task D5)', () => {
-  it('should export ColumnMapperModal component properly', () => {
-    expect(ColumnMapperModal).toBeDefined();
-    expect(typeof ColumnMapperModal).toBe('function');
+  it('should render closed ColumnMapperModal without crashing', () => {
+    const { container } = render(
+      <ColumnMapperModal isOpen={false} file={null} onClose={vi.fn()} onConfirm={vi.fn()} />,
+    );
+    expect(container.firstChild).toBeNull();
   });
 
   it('should parse CSV preview into headers and up to 5 rows', () => {
