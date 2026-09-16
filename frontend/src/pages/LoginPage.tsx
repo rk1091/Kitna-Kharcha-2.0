@@ -14,8 +14,8 @@ export const LoginPage: React.FC = () => {
 
   const [isRegisterMode, setIsRegisterMode] = useState(false);
   const [name, setName] = useState('');
-  const [email, setEmail] = useState('user@example.com');
-  const [password, setPassword] = useState('password123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e?: React.FormEvent) => {
@@ -79,6 +79,7 @@ export const LoginPage: React.FC = () => {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  placeholder="user@example.com"
                   className="pl-9 h-9 text-xs"
                   required
                 />
@@ -93,6 +94,7 @@ export const LoginPage: React.FC = () => {
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
                   className="pl-9 h-9 text-xs"
                   required
                 />

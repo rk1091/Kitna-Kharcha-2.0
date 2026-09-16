@@ -47,22 +47,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setToken(storedToken);
         }
       } catch (error: any) {
-        // If 401 Unauthorized, token has expired or is invalid
-        if (error?.response?.status === 401) {
-          localStorage.removeItem('token');
-          if (isMounted) {
-            setToken(null);
-            setUser(null);
-          }
-        } else if (storedToken.startsWith('demo-token-')) {
-          // Development/offline demo mock user fallback
-          if (isMounted) {
-            setUser({
-              id: 'demo-user-1',
-              email: 'demo@kitnakharcha.local',
-              name: 'Demo User',
-            });
-          }
+        localStorage.removeItem('token');
+        if (isMounted) {
+          setToken(null);
+          setUser(null);
         }
       } finally {
         if (isMounted) {
@@ -90,19 +78,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setToken(receivedToken);
       setUser(response.data.user);
     } catch (error: any) {
-      // Offline / demo fallback if backend is unreachable or demo credentials provided
-      if (!error?.response || error?.response?.status === 404 || error?.response?.status >= 500) {
-        const demoToken = `demo-token-${Date.now()}`;
-        const demoUser: User = {
-          id: 'demo-user-1',
-          email: email || 'demo@kitnakharcha.local',
-          name: email.split('@')[0] || 'Demo User',
-        };
-        localStorage.setItem('token', demoToken);
-        setToken(demoToken);
-        setUser(demoUser);
-        return;
-      }
       throw error;
     } finally {
       setIsLoading(false);
