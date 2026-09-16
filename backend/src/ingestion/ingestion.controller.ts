@@ -7,15 +7,14 @@ import {
   UseInterceptors,
   UploadedFile,
   Body,
-  Req,
   BadRequestException,
   UseGuards,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { IngestionService } from './ingestion.service';
 import { importTextSchema } from './dto/import-text.dto';
-import { Request } from 'express';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { CurrentUser } from '../auth/current-user.decorator';
 
 @Controller('statements')
 @UseGuards(JwtAuthGuard)
@@ -23,14 +22,15 @@ export class IngestionController {
   constructor(private readonly ingestionService: IngestionService) {}
 
   @Get()
-  async getStatements(@Req() req: Request) {
-    const userId = (req as any).user?.id || 'cmtve5piy0000l5jm13ng5ut5';
+  async getStatements(@CurrentUser() userId: string) {
     return this.ingestionService.getAllStatements(userId);
   }
 
   @Get(':id')
-  async getStatementById(@Param('id') id: string, @Req() req: Request) {
-    const userId = (req as any).user?.id || 'cmtve5piy0000l5jm13ng5ut5';
+  async getStatementById(
+    @Param('id') id: string,
+    @CurrentUser() userId: string,
+  ) {
     return this.ingestionService.getStatementById(userId, id);
   }
 
@@ -39,13 +39,12 @@ export class IngestionController {
   async uploadStatement(
     @UploadedFile() file: Express.Multer.File,
     @Body('password') password: string | undefined,
-    @Req() req: Request,
+    @CurrentUser() userId: string,
     @Body('columnMapping') columnMapping?: string,
   ) {
     if (!file) {
       throw new BadRequestException('File is required');
     }
-    const userId = (req as any).user?.id || 'cmtve5piy0000l5jm13ng5ut5';
     if (columnMapping !== undefined) {
       return this.ingestionService.handleFileUpload(userId, file, password, columnMapping);
     }
@@ -55,26 +54,29 @@ export class IngestionController {
   @Post('import-text')
   async importText(
     @Body() body: unknown,
-    @Req() req: Request
+    @CurrentUser() userId: string,
   ) {
     const parsed = importTextSchema.safeParse(body);
     if (!parsed.success) {
       throw new BadRequestException(parsed.error.format());
     }
     
-    const userId = (req as any).user?.id || 'default-user-id';
     return this.ingestionService.handleTextImport(userId, parsed.data);
   }
 
   @Delete(':id')
-  async deleteStatement(@Param('id') id: string, @Req() req: Request) {
-    const userId = (req as any).user?.id || 'cmtve5piy0000l5jm13ng5ut5';
+  async deleteStatement(
+    @Param('id') id: string,
+    @CurrentUser() userId: string,
+  ) {
     return this.ingestionService.deleteStatement(userId, id);
   }
 
   @Post(':id/reclassify')
-  async reclassifyStatement(@Param('id') id: string, @Req() req: Request) {
-    const userId = (req as any).user?.id || 'cmtve5piy0000l5jm13ng5ut5';
+  async reclassifyStatement(
+    @Param('id') id: string,
+    @CurrentUser() userId: string,
+  ) {
     return this.ingestionService.reclassifyStatement(userId, id);
   }
 }

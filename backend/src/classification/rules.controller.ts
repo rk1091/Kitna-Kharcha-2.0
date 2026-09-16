@@ -6,12 +6,11 @@ import {
   Delete,
   Param,
   Body,
-  Req,
   UseGuards,
 } from '@nestjs/common';
 import { RulesService, CreateRuleDto, UpdateRuleDto } from './rules.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { Request } from 'express';
+import { CurrentUser } from '../auth/current-user.decorator';
 
 @Controller('rules')
 @UseGuards(JwtAuthGuard)
@@ -19,20 +18,17 @@ export class RulesController {
   constructor(private readonly rulesService: RulesService) {}
 
   @Get()
-  async getAllRules(@Req() req: Request) {
-    const userId = (req as any).user?.id || 'cmtve5piy0000l5jm13ng5ut5';
+  async getAllRules(@CurrentUser() userId: string) {
     return this.rulesService.getAllRules(userId);
   }
 
   @Get(':id')
-  async getRuleById(@Param('id') id: string, @Req() req: Request) {
-    const userId = (req as any).user?.id || 'cmtve5piy0000l5jm13ng5ut5';
+  async getRuleById(@Param('id') id: string, @CurrentUser() userId: string) {
     return this.rulesService.getRuleById(userId, id);
   }
 
   @Post()
-  async createRule(@Body() dto: CreateRuleDto, @Req() req: Request) {
-    const userId = (req as any).user?.id || 'cmtve5piy0000l5jm13ng5ut5';
+  async createRule(@Body() dto: CreateRuleDto, @CurrentUser() userId: string) {
     return this.rulesService.createRule(userId, dto);
   }
 
@@ -40,15 +36,13 @@ export class RulesController {
   async updateRule(
     @Param('id') id: string,
     @Body() dto: UpdateRuleDto,
-    @Req() req: Request,
+    @CurrentUser() userId: string,
   ) {
-    const userId = (req as any).user?.id || 'cmtve5piy0000l5jm13ng5ut5';
     return this.rulesService.updateRule(userId, id, dto);
   }
 
   @Delete(':id')
-  async deleteRule(@Param('id') id: string, @Req() req: Request) {
-    const userId = (req as any).user?.id || 'cmtve5piy0000l5jm13ng5ut5';
+  async deleteRule(@Param('id') id: string, @CurrentUser() userId: string) {
     return this.rulesService.deleteRule(userId, id);
   }
 }

@@ -20,7 +20,7 @@ export class RecurringService {
   /**
    * Scan user's debit transactions to detect and persist recurring subscriptions, utilities, and EMIs.
    */
-  async detectRecurring(userId: string): Promise<any[]> {
+  async detectRecurring(userId: string): Promise<any> {
     const transactions = await this.prisma.transaction.findMany({
       where: {
         statement: { userId },

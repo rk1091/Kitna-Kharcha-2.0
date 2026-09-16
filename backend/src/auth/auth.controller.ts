@@ -3,6 +3,7 @@ import { AuthService } from './auth.service';
 import { RegisterDto, LoginDto, RegisterDtoSchema, LoginDtoSchema } from './dto/auth.dto';
 import { ZodValidationPipe } from './zod-validation.pipe';
 import { JwtAuthGuard } from './jwt-auth.guard';
+import { CurrentUser } from './current-user.decorator';
 import { Request } from 'express';
 
 @Controller('auth')
@@ -29,22 +30,19 @@ export class AuthController {
 
   @Patch('profile')
   @UseGuards(JwtAuthGuard)
-  async updateProfile(@Req() req: Request, @Body() body: any) {
-    const userId = (req as any).user?.id || 'cmtve5piy0000l5jm13ng5ut5';
+  async updateProfile(@CurrentUser() userId: string, @Body() body: any) {
     return this.authService.updateProfile(userId, body);
   }
 
   @Post('clear-data')
   @UseGuards(JwtAuthGuard)
-  async clearAllData(@Req() req: Request) {
-    const userId = (req as any).user?.id || 'cmtve5piy0000l5jm13ng5ut5';
+  async clearAllData(@CurrentUser() userId: string) {
     return this.authService.clearAllUserData(userId);
   }
 
   @Get('export-json')
   @UseGuards(JwtAuthGuard)
-  async exportJson(@Req() req: Request) {
-    const userId = (req as any).user?.id || 'cmtve5piy0000l5jm13ng5ut5';
+  async exportJson(@CurrentUser() userId: string) {
     return this.authService.exportAllUserData(userId);
   }
 }

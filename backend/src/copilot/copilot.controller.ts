@@ -1,6 +1,7 @@
-import { Controller, Post, Get, Body, UseGuards, Req } from '@nestjs/common';
+import { Controller, Post, Get, Body, UseGuards } from '@nestjs/common';
 import { CopilotService } from './copilot.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { CurrentUser } from '../auth/current-user.decorator';
 
 @Controller('copilot')
 @UseGuards(JwtAuthGuard)
@@ -8,22 +9,21 @@ export class CopilotController {
   constructor(private readonly copilotService: CopilotService) {}
 
   @Get('history')
-  async getHistory(@Req() req: any) {
-    const userId = req.user?.id || 'cmtve5piy0000l5jm13ng5ut5';
+  async getHistory(@CurrentUser() userId: string) {
     const messages = await this.copilotService.getSessionHistory(userId);
     return { messages };
   }
 
   @Post('clear')
-  async clearHistory(@Req() req: any) {
-    const userId = req.user?.id || 'cmtve5piy0000l5jm13ng5ut5';
+  async clearHistory(@CurrentUser() userId: string) {
     return this.copilotService.clearSessionHistory(userId);
   }
 
   @Post('ask')
-  async ask(@Body('question') question: string, @Req() req: any) {
-    const userId = req.user?.id || 'cmtve5piy0000l5jm13ng5ut5';
-
+  async ask(
+    @Body('question') question: string,
+    @CurrentUser() userId: string,
+  ) {
     if (!question) {
       return { answer: 'Please ask a question.' };
     }

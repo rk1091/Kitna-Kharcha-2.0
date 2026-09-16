@@ -1,7 +1,6 @@
 import {
   Controller,
   Get,
-  Req,
   UseGuards,
   Patch,
   Param,
@@ -12,7 +11,7 @@ import {
 } from '@nestjs/common';
 import { TransactionsService, TransactionFilters } from './transactions.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { Request } from 'express';
+import { CurrentUser } from '../auth/current-user.decorator';
 
 @Controller('transactions')
 @UseGuards(JwtAuthGuard)
@@ -20,14 +19,15 @@ export class TransactionsController {
   constructor(private readonly transactionsService: TransactionsService) {}
 
   @Get()
-  async getTransactions(@Req() req: Request, @Query() query: TransactionFilters) {
-    const userId = (req as any).user?.id || 'cmtve5piy0000l5jm13ng5ut5';
+  async getTransactions(
+    @CurrentUser() userId: string,
+    @Query() query: TransactionFilters,
+  ) {
     return this.transactionsService.getTransactions(userId, query);
   }
 
   @Get('statements')
-  async getStatements(@Req() req: Request) {
-    const userId = (req as any).user?.id || 'cmtve5piy0000l5jm13ng5ut5';
+  async getStatements(@CurrentUser() userId: string) {
     return this.transactionsService.getStatementUploads(userId);
   }
 
@@ -52,8 +52,7 @@ export class TransactionsController {
   }
 
   @Get('tags/all')
-  async getTags(@Req() req: Request) {
-    const userId = (req as any).user?.id || 'cmtve5piy0000l5jm13ng5ut5';
+  async getTags(@CurrentUser() userId: string) {
     return this.transactionsService.getAllTags(userId);
   }
 
@@ -61,33 +60,32 @@ export class TransactionsController {
   async updateTransaction(
     @Param('id') id: string,
     @Body() body: any,
-    @Req() req: Request,
+    @CurrentUser() userId: string,
   ) {
-    const userId = (req as any).user?.id || 'cmtve5piy0000l5jm13ng5ut5';
     return this.transactionsService.updateTransaction(userId, id, body);
   }
 
   @Delete(':id')
-  async deleteTransaction(@Param('id') id: string, @Req() req: Request) {
-    const userId = (req as any).user?.id || 'cmtve5piy0000l5jm13ng5ut5';
+  async deleteTransaction(
+    @Param('id') id: string,
+    @CurrentUser() userId: string,
+  ) {
     return this.transactionsService.deleteTransaction(userId, id);
   }
 
   @Post('bulk-categorize')
   async bulkCategorize(
     @Body() body: { transactionIds: string[]; categoryId: string },
-    @Req() req: Request,
+    @CurrentUser() userId: string,
   ) {
-    const userId = (req as any).user?.id || 'cmtve5piy0000l5jm13ng5ut5';
     return this.transactionsService.bulkCategorize(userId, body.transactionIds, body.categoryId);
   }
 
   @Post('bulk-delete')
   async bulkDelete(
     @Body() body: { transactionIds: string[] },
-    @Req() req: Request,
+    @CurrentUser() userId: string,
   ) {
-    const userId = (req as any).user?.id || 'cmtve5piy0000l5jm13ng5ut5';
     return this.transactionsService.bulkDelete(userId, body.transactionIds);
   }
 }

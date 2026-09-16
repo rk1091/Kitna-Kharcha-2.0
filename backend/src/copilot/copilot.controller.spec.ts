@@ -18,9 +18,8 @@ describe('CopilotController', () => {
 
   it('should return answer when asking copilot', async () => {
     serviceMock.askCopilot.mockResolvedValue('Here is your financial report');
-    const req = { user: { id: 'u1' } };
 
-    const res = await controller.ask('Analyze spending', req);
+    const res = await controller.ask('Analyze spending', 'u1');
     expect(res).toEqual({ answer: 'Here is your financial report' });
     expect(serviceMock.askCopilot).toHaveBeenCalledWith('u1', 'Analyze spending');
   });
@@ -30,18 +29,16 @@ describe('CopilotController', () => {
       { role: 'user', content: 'Hi' },
       { role: 'ai', content: 'Hello!' },
     ]);
-    const req = { user: { id: 'u1' } };
 
-    const res = await controller.getHistory(req);
+    const res = await controller.getHistory('u1');
     expect(res.messages).toHaveLength(2);
     expect(serviceMock.getSessionHistory).toHaveBeenCalledWith('u1');
   });
 
   it('should clear conversation history', async () => {
     serviceMock.clearSessionHistory.mockResolvedValue({ success: true });
-    const req = { user: { id: 'u1' } };
 
-    const res = await controller.clearHistory(req);
+    const res = await controller.clearHistory('u1');
     expect(res).toEqual({ success: true });
     expect(serviceMock.clearSessionHistory).toHaveBeenCalledWith('u1');
   });

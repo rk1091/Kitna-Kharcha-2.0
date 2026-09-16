@@ -18,13 +18,12 @@ describe('ExportController (Task E1)', () => {
 
   it('should stream CSV with attachment header', async () => {
     mockExportService.exportCSV.mockResolvedValue('Date,Amount\n2026-01-01,100');
-    const req = { user: { id: 'user-1' } } as any;
     const res = {
       setHeader: vi.fn(),
       send: vi.fn((val) => val),
     } as any;
 
-    await controller.exportCSV(req, res);
+    await controller.exportCSV('user-1', res);
     expect(mockExportService.exportCSV).toHaveBeenCalledWith('user-1', {
       from: undefined,
       to: undefined,
@@ -37,13 +36,12 @@ describe('ExportController (Task E1)', () => {
   it('should stream Excel XLSX with attachment header', async () => {
     const dummyBuffer = Buffer.from('mock-excel');
     mockExportService.exportExcel.mockResolvedValue(dummyBuffer);
-    const req = { user: { id: 'user-1' } } as any;
     const res = {
       setHeader: vi.fn(),
       send: vi.fn((val) => val),
     } as any;
 
-    await controller.exportExcel(req, res);
+    await controller.exportExcel('user-1', res);
     expect(res.setHeader).toHaveBeenCalledWith(
       'Content-Type',
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -53,13 +51,12 @@ describe('ExportController (Task E1)', () => {
 
   it('should stream HTML report', async () => {
     mockExportService.exportExecutiveReport.mockResolvedValue('<html>Report</html>');
-    const req = { user: { id: 'user-1' } } as any;
     const res = {
       setHeader: vi.fn(),
       send: vi.fn((val) => val),
     } as any;
 
-    await controller.exportExecutiveReport(req, res);
+    await controller.exportExecutiveReport('user-1', res);
     expect(res.setHeader).toHaveBeenCalledWith('Content-Type', 'text/html; charset=utf-8');
     expect(res.send).toHaveBeenCalledWith('<html>Report</html>');
   });

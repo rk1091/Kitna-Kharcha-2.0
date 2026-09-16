@@ -1,7 +1,8 @@
-import { Controller, Get, Query, Req, Res, UseGuards } from '@nestjs/common';
+import { Controller, Get, Query, Res, UseGuards } from '@nestjs/common';
 import { ExportService } from './export.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { Request, Response } from 'express';
+import { CurrentUser } from '../auth/current-user.decorator';
+import { Response } from 'express';
 
 @Controller('export')
 @UseGuards(JwtAuthGuard)
@@ -10,13 +11,12 @@ export class ExportController {
 
   @Get('csv')
   async exportCSV(
-    @Req() req: Request,
+    @CurrentUser() userId: string,
     @Res() res: Response,
     @Query('from') from?: string,
     @Query('to') to?: string,
     @Query('categoryId') categoryId?: string,
   ) {
-    const userId = (req as any).user?.id || 'cmtve5piy0000l5jm13ng5ut5';
     const csv = await this.exportService.exportCSV(userId, { from, to, categoryId });
 
     res.setHeader('Content-Type', 'text/csv');
@@ -26,13 +26,12 @@ export class ExportController {
 
   @Get('excel')
   async exportExcel(
-    @Req() req: Request,
+    @CurrentUser() userId: string,
     @Res() res: Response,
     @Query('from') from?: string,
     @Query('to') to?: string,
     @Query('categoryId') categoryId?: string,
   ) {
-    const userId = (req as any).user?.id || 'cmtve5piy0000l5jm13ng5ut5';
     const buffer = await this.exportService.exportExcel(userId, { from, to, categoryId });
 
     res.setHeader(
@@ -45,12 +44,11 @@ export class ExportController {
 
   @Get('report')
   async exportExecutiveReport(
-    @Req() req: Request,
+    @CurrentUser() userId: string,
     @Res() res: Response,
     @Query('from') from?: string,
     @Query('to') to?: string,
   ) {
-    const userId = (req as any).user?.id || 'cmtve5piy0000l5jm13ng5ut5';
     const html = await this.exportService.exportExecutiveReport(userId, { from, to });
 
     res.setHeader('Content-Type', 'text/html; charset=utf-8');

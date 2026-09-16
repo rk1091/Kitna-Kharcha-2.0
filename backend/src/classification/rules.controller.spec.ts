@@ -22,52 +22,47 @@ describe('RulesController', () => {
   });
 
   it('should get all rules for user', async () => {
-    const req = { user: { id: 'u1' } } as any;
     const expected = [{ id: 'r1', name: 'Rule 1' }];
     mockRulesService.getAllRules.mockResolvedValue(expected);
 
-    const result = await controller.getAllRules(req);
+    const result = await controller.getAllRules('u1');
     expect(result).toEqual(expected);
     expect(mockRulesService.getAllRules).toHaveBeenCalledWith('u1');
   });
 
   it('should get rule by id', async () => {
-    const req = { user: { id: 'u1' } } as any;
     const expected = { id: 'r1', name: 'Rule 1' };
     mockRulesService.getRuleById.mockResolvedValue(expected);
 
-    const result = await controller.getRuleById('r1', req);
+    const result = await controller.getRuleById('r1', 'u1');
     expect(result).toEqual(expected);
     expect(mockRulesService.getRuleById).toHaveBeenCalledWith('u1', 'r1');
   });
 
   it('should create a rule', async () => {
-    const req = { user: { id: 'u1' } } as any;
     const dto = { name: 'Rule 1', conditions: { keyword: 'swiggy' }, categoryId: 'c1' };
     const expected = { id: 'r1', ...dto };
     mockRulesService.createRule.mockResolvedValue(expected);
 
-    const result = await controller.createRule(dto, req);
+    const result = await controller.createRule(dto, 'u1');
     expect(result).toEqual(expected);
     expect(mockRulesService.createRule).toHaveBeenCalledWith('u1', dto);
   });
 
   it('should update a rule', async () => {
-    const req = { user: { id: 'u1' } } as any;
     const dto = { name: 'Rule 1 Updated' };
     const expected = { id: 'r1', name: 'Rule 1 Updated' };
     mockRulesService.updateRule.mockResolvedValue(expected);
 
-    const result = await controller.updateRule('r1', dto, req);
+    const result = await controller.updateRule('r1', dto, 'u1');
     expect(result).toEqual(expected);
     expect(mockRulesService.updateRule).toHaveBeenCalledWith('u1', 'r1', dto);
   });
 
   it('should delete a rule', async () => {
-    const req = { user: { id: 'u1' } } as any;
     mockRulesService.deleteRule.mockResolvedValue({ success: true, deletedId: 'r1' });
 
-    const result = await controller.deleteRule('r1', req);
+    const result = await controller.deleteRule('r1', 'u1');
     expect(result).toEqual({ success: true, deletedId: 'r1' });
     expect(mockRulesService.deleteRule).toHaveBeenCalledWith('u1', 'r1');
   });
