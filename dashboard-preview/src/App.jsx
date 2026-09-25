@@ -10,7 +10,6 @@ import {
   Moon,
   Sun,
   ShieldCheck,
-  ChevronRight,
   Palette,
   Star,
   Flame,
@@ -19,18 +18,12 @@ import {
   Trees,
   Heart,
   Check,
-  Coffee,
   ArrowUpRight,
-  Filter,
-  CheckCircle2,
-  TrendingDown,
-  TrendingUp,
   Cpu,
-  Layers,
-  SlidersHorizontal,
-  Compass,
   Lock,
-  Waves
+  Waves,
+  UploadCloud,
+  CheckCircle2
 } from 'lucide-react';
 import Interactive3DBackground from './components/Interactive3DBackground.jsx';
 import DecisionInspectorModal from './components/DecisionInspectorModal.jsx';
@@ -38,21 +31,19 @@ import StatementUploadCard from './components/StatementUploadCard.jsx';
 
 export default function App() {
   const [theme, setTheme] = useState('cozy');
-  const [backgroundMode, setBackgroundMode] = useState('3d-gyro'); // '3d-gyro' | '3d-matrix' | 'stars' | 'cats' | 'snow' | 'none'
   const [privacyMode, setPrivacyMode] = useState(false);
-  const [maskPII, setMaskPII] = useState(false);
   const [isPaletteOpen, setIsPaletteOpen] = useState(false);
   const [selectedTxn, setSelectedTxn] = useState(null);
   const [activeTierFilter, setActiveTierFilter] = useState('all');
   const [insightApplied, setInsightApplied] = useState(false);
 
-  // 14 LUXURY COLOR SCHEMES & TYPOGRAPHY
+  // 14 BESPOKE THEMES WITH HARMONIOUS VISUAL ATMOSPHERES (ZERO CROSS-POLLUTION)
   const themeStyles = {
     // 1. COZY HEARTH (Warm Paper & Maroon)
     cozy: {
       id: 'cozy',
       name: 'Cozy Hearth',
-      tagline: 'Warm Paper, Oxblood Maroon & Editorial Serif',
+      tagline: 'Warm Paper, Oxblood Maroon & Candlelight Ambiance',
       bg: 'bg-[#F5F2ED]',
       card: 'bg-white/80 backdrop-blur-md border-[#D9CEB2] text-[#2D241E] shadow-[0_8px_30px_rgb(217,206,178,0.25)]',
       accent: 'text-[#800000]',
@@ -62,65 +53,10 @@ export default function App() {
       heading: 'font-playfair italic font-bold',
       mono: 'font-outfit font-semibold',
       icon: <Gift size={16} className="text-[#800000]" />,
-      dot: '#800000',
-      defaultBg: 'snow'
+      dot: '#800000'
     },
 
-    // 2. STARRY NIGHT (Deep Cosmic Navy & Shooting Stars)
-    starry: {
-      id: 'starry',
-      name: 'Starry Night 2.0',
-      tagline: 'Deep Cosmic Navy & Shooting Stars',
-      bg: 'bg-[#020617]',
-      card: 'bg-white/5 backdrop-blur-xl border-white/10 text-indigo-50 shadow-[0_8px_30px_rgb(49,46,129,0.3)]',
-      accent: 'text-yellow-400',
-      badge: 'bg-yellow-400/10 text-yellow-300 border-yellow-400/30',
-      btn: 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-500/30',
-      font: 'font-space',
-      heading: 'font-space font-bold tracking-tight',
-      mono: 'font-space font-bold',
-      icon: <Star size={16} className="text-yellow-400" />,
-      dot: '#eab308',
-      defaultBg: 'stars'
-    },
-
-    // 3. NEKO KAWAII 2.0 (Deep Mystic Purple & Floating Cats)
-    neko: {
-      id: 'neko',
-      name: 'Neko Kawaii 2.0',
-      tagline: 'Deep Mystic Purple & Floating Paws',
-      bg: 'bg-[#2D1B4E]',
-      card: 'bg-[#3B2667]/70 backdrop-blur-xl border-purple-400/20 text-pink-50 shadow-[0_8px_30px_rgb(91,33,182,0.35)]',
-      accent: 'text-pink-300',
-      badge: 'bg-pink-400/15 text-pink-300 border-pink-400/30',
-      btn: 'bg-[#B794F4] hover:bg-[#a57ced] text-white shadow-lg shadow-purple-500/30',
-      font: 'font-quicksand',
-      heading: 'font-quicksand font-bold',
-      mono: 'font-quicksand font-bold',
-      icon: <Cat size={16} className="text-pink-300" />,
-      dot: '#B794F4',
-      defaultBg: 'cats'
-    },
-
-    // 4. NEKO PASTEL (Original Soft Lavender)
-    nekoPastel: {
-      id: 'nekoPastel',
-      name: 'Neko Lavender',
-      tagline: 'Pastel Lavender & Soft Cute Vibes',
-      bg: 'bg-[#F0E6FF]',
-      card: 'bg-white/85 backdrop-blur-xl border-[#D1BBFF] text-[#4A376E] shadow-[0_8px_30px_rgb(209,187,255,0.4)]',
-      accent: 'text-[#6B46C1]',
-      badge: 'bg-[#6B46C1]/10 text-[#6B46C1] border-[#6B46C1]/20',
-      btn: 'bg-[#6B46C1] hover:bg-[#5835A8] text-white shadow-md shadow-[#6B46C1]/20',
-      font: 'font-quicksand',
-      heading: 'font-quicksand font-bold',
-      mono: 'font-quicksand font-bold',
-      icon: <Heart size={16} className="text-[#6B46C1]" />,
-      dot: '#6B46C1',
-      defaultBg: 'cats'
-    },
-
-    // 5. CHRISTMAS MORNING (Deep Festive Red with Falling Snow)
+    // 2. CHRISTMAS MORNING (Deep Festive Red with Falling Snow)
     christmas: {
       id: 'christmas',
       name: 'Christmas Morning',
@@ -134,8 +70,58 @@ export default function App() {
       heading: 'font-playfair italic font-bold',
       mono: 'font-outfit font-semibold',
       icon: <Snowflake size={16} className="text-yellow-300" />,
-      dot: '#dc2626',
-      defaultBg: 'snow'
+      dot: '#dc2626'
+    },
+
+    // 3. STARRY NIGHT (Deep Cosmic Navy & Shooting Stars)
+    starry: {
+      id: 'starry',
+      name: 'Starry Night 2.0',
+      tagline: 'Deep Cosmic Navy & Shooting Stars',
+      bg: 'bg-[#020617]',
+      card: 'bg-white/5 backdrop-blur-xl border-white/10 text-indigo-50 shadow-[0_8px_30px_rgb(49,46,129,0.3)]',
+      accent: 'text-yellow-400',
+      badge: 'bg-yellow-400/10 text-yellow-300 border-yellow-400/30',
+      btn: 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-500/30',
+      font: 'font-space',
+      heading: 'font-space font-bold tracking-tight',
+      mono: 'font-space font-bold',
+      icon: <Star size={16} className="text-yellow-400" />,
+      dot: '#eab308'
+    },
+
+    // 4. NEKO KAWAII 2.0 (Deep Mystic Purple & Floating Paws)
+    neko: {
+      id: 'neko',
+      name: 'Neko Kawaii 2.0',
+      tagline: 'Deep Mystic Purple & Floating Paws',
+      bg: 'bg-[#2D1B4E]',
+      card: 'bg-[#3B2667]/70 backdrop-blur-xl border-purple-400/20 text-pink-50 shadow-[0_8px_30px_rgb(91,33,182,0.35)]',
+      accent: 'text-pink-300',
+      badge: 'bg-pink-400/15 text-pink-300 border-pink-400/30',
+      btn: 'bg-[#B794F4] hover:bg-[#a57ced] text-white shadow-lg shadow-purple-500/30',
+      font: 'font-quicksand',
+      heading: 'font-quicksand font-bold',
+      mono: 'font-quicksand font-bold',
+      icon: <Cat size={16} className="text-pink-300" />,
+      dot: '#B794F4'
+    },
+
+    // 5. NEKO PASTEL (Original Soft Lavender)
+    nekoPastel: {
+      id: 'nekoPastel',
+      name: 'Neko Lavender',
+      tagline: 'Pastel Lavender & Soft Cute Vibes',
+      bg: 'bg-[#F0E6FF]',
+      card: 'bg-white/85 backdrop-blur-xl border-[#D1BBFF] text-[#4A376E] shadow-[0_8px_30px_rgb(209,187,255,0.4)]',
+      accent: 'text-[#6B46C1]',
+      badge: 'bg-[#6B46C1]/10 text-[#6B46C1] border-[#6B46C1]/20',
+      btn: 'bg-[#6B46C1] hover:bg-[#5835A8] text-white shadow-md shadow-[#6B46C1]/20',
+      font: 'font-quicksand',
+      heading: 'font-quicksand font-bold',
+      mono: 'font-quicksand font-bold',
+      icon: <Heart size={16} className="text-[#6B46C1]" />,
+      dot: '#6B46C1'
     },
 
     // 6. MIDNIGHT NAVY (Professional Slate Dark)
@@ -152,8 +138,7 @@ export default function App() {
       heading: 'font-outfit font-bold tracking-tight',
       mono: 'font-mono',
       icon: <Moon size={16} className="text-blue-400" />,
-      dot: '#3b82f6',
-      defaultBg: '3d-gyro'
+      dot: '#3b82f6'
     },
 
     // 7. OG STEALTH MATRIX (Pitch Black & Neon Green)
@@ -170,8 +155,7 @@ export default function App() {
       heading: 'font-mono font-bold tracking-tight',
       mono: 'font-mono',
       icon: <Zap size={16} className="text-[#00FF94]" />,
-      dot: '#00FF94',
-      defaultBg: '3d-matrix'
+      dot: '#00FF94'
     },
 
     // 8. MIDNIGHT CYBER (Rich Black & Neon Purple)
@@ -188,8 +172,7 @@ export default function App() {
       heading: 'font-inter font-bold tracking-tight',
       mono: 'font-mono',
       icon: <Sparkles size={16} className="text-[#a855f7]" />,
-      dot: '#a855f7',
-      defaultBg: '3d-gyro'
+      dot: '#a855f7'
     },
 
     // 9. CYBERPUNK 2077 (Neon Gold & Cyber Amber)
@@ -206,8 +189,7 @@ export default function App() {
       heading: 'font-mono font-bold tracking-tight',
       mono: 'font-mono',
       icon: <Zap size={16} className="text-amber-400" />,
-      dot: '#f59e0b',
-      defaultBg: '3d-matrix'
+      dot: '#f59e0b'
     },
 
     // 10. DEEP OCEAN TRENCH (Abyssal Blue & Bioluminescent Aqua)
@@ -224,8 +206,7 @@ export default function App() {
       heading: 'font-space font-bold tracking-tight',
       mono: 'font-space font-bold',
       icon: <Waves size={16} className="text-cyan-400" />,
-      dot: '#06b6d4',
-      defaultBg: '3d-gyro'
+      dot: '#06b6d4'
     },
 
     // 11. ECO WEALTH (Deep Emerald & Gold)
@@ -242,8 +223,7 @@ export default function App() {
       heading: 'font-outfit font-bold tracking-tight',
       mono: 'font-mono',
       icon: <Trees size={16} className="text-[#10b981]" />,
-      dot: '#10b981',
-      defaultBg: '3d-gyro'
+      dot: '#10b981'
     },
 
     // 12. OG SOLAR (Warm Off-White & Electric Orange)
@@ -260,8 +240,7 @@ export default function App() {
       heading: 'font-outfit font-bold tracking-tight',
       mono: 'font-mono',
       icon: <Flame size={16} className="text-orange-600" />,
-      dot: '#ea580c',
-      defaultBg: '3d-gyro'
+      dot: '#ea580c'
     },
 
     // 13. OG NORDIC (Alpine Frost Minimal)
@@ -278,8 +257,7 @@ export default function App() {
       heading: 'font-inter font-semibold tracking-tight',
       mono: 'font-mono',
       icon: <Snowflake size={16} className="text-blue-400" />,
-      dot: '#0284c7',
-      defaultBg: 'snow'
+      dot: '#0284c7'
     },
 
     // 14. MODERN PAPER (Clean Swiss Monochrome)
@@ -296,14 +274,13 @@ export default function App() {
       heading: 'font-inter font-extrabold tracking-tight',
       mono: 'font-mono',
       icon: <Sun size={16} className="text-zinc-800" />,
-      dot: '#18181b',
-      defaultBg: 'none'
+      dot: '#18181b'
     }
   };
 
   const s = themeStyles[theme] || themeStyles.cozy;
 
-  // INITIAL TRANSACTIONS DATA WITH TIER DETAILS
+  // TRANSACTIONS DATA
   const [transactions, setTransactions] = useState([
     {
       id: 'tx-1',
@@ -316,8 +293,7 @@ export default function App() {
       confidence: '100%',
       date: 'Today, 4:12 PM',
       account: 'HDFC •••• 4892',
-      reasoning: 'Normalized from gateway wrapper (: WWW UBER COM IN) to canonical merchant "Uber". 0ms latency, 0 tokens.',
-      maskedPII: 'UBER••••••••'
+      reasoning: 'Normalized from gateway wrapper (: WWW UBER COM IN) to canonical merchant "Uber". 0ms latency, 0 tokens.'
     },
     {
       id: 'tx-2',
@@ -330,8 +306,7 @@ export default function App() {
       confidence: '98.5%',
       date: 'Yesterday, 8:40 PM',
       account: 'SBI •••• 1044',
-      reasoning: 'Disambiguated Amazon retail vs Prime video annual pass via batched Gemini Structured Classifier. 18 tokens.',
-      maskedPII: 'AMZN PRIME••••••••'
+      reasoning: 'Disambiguated Amazon retail vs Prime video annual pass via batched Gemini Structured Classifier. 18 tokens.'
     },
     {
       id: 'tx-3',
@@ -344,8 +319,7 @@ export default function App() {
       confidence: '100%',
       date: '23 Sep, 1:15 PM',
       account: 'HDFC •••• 4892',
-      reasoning: 'Stripped gateway prefix (RAZ*) and matched "swiggy" substring rule directly. 0ms latency, 0 tokens.',
-      maskedPII: 'RAZ*SWIGGY••••••••'
+      reasoning: 'Stripped gateway prefix (RAZ*) and matched "swiggy" substring rule directly. 0ms latency, 0 tokens.'
     },
     {
       id: 'tx-4',
@@ -358,8 +332,7 @@ export default function App() {
       confidence: '95.0%',
       date: '22 Sep, 6:00 PM',
       account: 'ICICI •••• 9921',
-      reasoning: 'Recognized recurring subscription pattern and digital entertainment merchant category code (MCC 4899). 12ms latency.',
-      maskedPII: 'NETFLIX••••••••'
+      reasoning: 'Recognized recurring subscription pattern and digital entertainment merchant category code (MCC 4899).'
     },
     {
       id: 'tx-5',
@@ -372,8 +345,7 @@ export default function App() {
       confidence: '94.0%',
       date: '21 Sep, 11:10 AM',
       account: 'HDFC •••• 4892',
-      reasoning: 'Matched utility recurring payment pattern and utility biller registry.',
-      maskedPII: 'IGL*••••••••'
+      reasoning: 'Matched utility recurring payment pattern and utility biller registry.'
     }
   ]);
 
@@ -398,8 +370,7 @@ export default function App() {
         confidence: '100%',
         date: 'Just Now',
         account: 'HDFC •••• 4892',
-        reasoning: 'Identified corporate salary NEFT credit pattern with 0 tokens.',
-        maskedPII: 'PAYROLL••••••••'
+        reasoning: 'Identified corporate salary NEFT credit pattern with 0 tokens.'
       },
       {
         id: `tx-${Date.now()}-2`,
@@ -412,8 +383,7 @@ export default function App() {
         confidence: '100%',
         date: 'Just Now',
         account: 'HDFC •••• 4892',
-        reasoning: 'Matched "zepto" substring keyword directly.',
-        maskedPII: 'ZEPTO••••••••'
+        reasoning: 'Matched "zepto" substring keyword directly.'
       }
     ];
     setTransactions((prev) => [...newTxns, ...prev]);
@@ -427,11 +397,11 @@ export default function App() {
     <div className={`relative min-h-screen transition-all duration-700 ${s.bg} ${s.font} ${s.card.includes('text-') ? '' : 'text-slate-800'} overflow-hidden`}>
       
       {/* ======================================================== */}
-      {/* 3D INTERACTIVE BACKGROUND ENGINE                         */}
+      {/* BESPOKE ATMOSPHERIC BACKGROUND (THEME-LOCKED WORLD)      */}
       {/* ======================================================== */}
-      <Interactive3DBackground mode={backgroundMode} theme={theme} />
+      <Interactive3DBackground theme={theme} />
 
-      {/* TOP SECURITY & METRICS BAR */}
+      {/* TOP SECURITY & TELEMETRY BAR */}
       <div className="relative z-30 border-b border-black/5 dark:border-white/10 px-4 sm:px-6 py-2 text-xs flex flex-wrap items-center justify-between gap-3 bg-black/5 dark:bg-white/[0.02] backdrop-blur-md">
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
@@ -439,32 +409,8 @@ export default function App() {
           <span className="opacity-40">•</span>
           <span className="opacity-70 font-mono">Zero Cloud Egress • AES-256 GCM</span>
         </div>
-
-        {/* 3D Scene Mode Selector Floating Bar */}
-        <div className="flex items-center gap-1.5 bg-black/10 dark:bg-white/10 p-1 rounded-full text-[11px] font-bold">
-          <span className="opacity-50 px-2 flex items-center gap-1 uppercase tracking-wider text-[9px]">
-            <Compass size={11} /> 3D Scene
-          </span>
-          {[
-            { id: '3d-gyro', label: '3D Gyro' },
-            { id: '3d-matrix', label: 'Matrix' },
-            { id: 'stars', label: 'Stars' },
-            { id: 'cats', label: 'Cats' },
-            { id: 'snow', label: 'Snow' },
-            { id: 'none', label: 'Flat' }
-          ].map((mode) => (
-            <button
-              key={mode.id}
-              onClick={() => setBackgroundMode(mode.id)}
-              className={`px-2.5 py-0.5 rounded-full transition-all ${
-                backgroundMode === mode.id
-                  ? 'bg-white/20 text-white shadow-sm ring-1 ring-white/30'
-                  : 'opacity-50 hover:opacity-100 hover:bg-white/5'
-              }`}
-            >
-              {mode.label}
-            </button>
-          ))}
+        <div className="text-[11px] opacity-60 font-mono">
+          THEME-LOCKED ATMOSPHERE: {s.name.toUpperCase()}
         </div>
       </div>
 
@@ -518,8 +464,8 @@ export default function App() {
                   className={`absolute right-0 mt-3 p-3.5 rounded-3xl border shadow-2xl z-[100] w-72 sm:w-80 ${s.card} max-h-[75vh] overflow-y-auto`}
                 >
                   <div className="px-2 pb-2 mb-2 border-b border-black/5 dark:border-white/10 flex items-center justify-between text-[10px] font-bold uppercase tracking-widest opacity-50 font-sans">
-                    <span>Master Luxury Palette</span>
-                    <span>14 Themes</span>
+                    <span>Harmonious Themes</span>
+                    <span>14 Skins</span>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
@@ -531,7 +477,6 @@ export default function App() {
                           key={t}
                           onClick={() => {
                             setTheme(t);
-                            if (item.defaultBg) setBackgroundMode(item.defaultBg);
                             setIsPaletteOpen(false);
                           }}
                           className={`flex items-center justify-between p-2 rounded-xl transition-all text-left text-xs font-semibold ${

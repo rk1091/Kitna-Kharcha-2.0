@@ -2,12 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Cat, Snowflake } from 'lucide-react';
 
-export default function Interactive3DBackground({ mode = '3d-gyro', theme = 'cozy' }) {
+export default function Interactive3DBackground({ theme = 'cozy' }) {
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
   useEffect(() => {
     const handleMouseMove = (e) => {
-      // Normalize mouse coordinates (-1 to 1)
       const x = (e.clientX / window.innerWidth) * 2 - 1;
       const y = (e.clientY / window.innerHeight) * 2 - 1;
       setMousePos({ x, y });
@@ -17,63 +16,50 @@ export default function Interactive3DBackground({ mode = '3d-gyro', theme = 'coz
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
 
+  // Theme-locked atmospheric worlds (NO CROSS-POLLUTION)
   return (
     <div className="fixed inset-0 pointer-events-none overflow-hidden z-0 select-none">
-      {/* 1. 3D GYROSCOPIC HOLOGRAPHIC VAULT RINGS */}
-      {mode === '3d-gyro' && (
-        <div
-          className="absolute inset-0 flex items-center justify-center [perspective:1200px]"
-          style={{
-            transform: `rotateY(${mousePos.x * 12}deg) rotateX(${-mousePos.y * 12}deg)`,
-            transition: 'transform 0.15s ease-out'
-          }}
-        >
-          {/* Ambient center radial glow */}
-          <div className="absolute w-[500px] h-[500px] rounded-full blur-[140px] opacity-25 bg-current pointer-events-none" />
-
-          {/* 3D Gyro Ring Outer */}
-          <motion.div
-            animate={{ rotateZ: 360, rotateX: 68 }}
-            transition={{ repeat: Infinity, duration: 25, ease: 'linear' }}
-            className="absolute w-[550px] h-[550px] rounded-full border border-dashed border-white/10 [transform-style:preserve-3d]"
-          >
-            <div className="absolute top-0 left-1/2 w-3.5 h-3.5 -ml-1.5 -mt-1.5 rounded-full bg-white shadow-[0_0_15px_#fff]" />
-          </motion.div>
-
-          {/* 3D Gyro Ring Mid */}
-          <motion.div
-            animate={{ rotateZ: -360, rotateY: 72 }}
-            transition={{ repeat: Infinity, duration: 18, ease: 'linear' }}
-            className="absolute w-[420px] h-[420px] rounded-full border border-white/15 [transform-style:preserve-3d]"
-          >
-            <div className="absolute bottom-0 right-1/2 w-2.5 h-2.5 -mr-1.25 -mb-1.25 rounded-full bg-yellow-400 shadow-[0_0_12px_#fbbf24]" />
-          </motion.div>
-
-          {/* 3D Gyro Ring Inner */}
-          <motion.div
-            animate={{ rotateZ: 360, rotateX: -45, rotateY: 55 }}
-            transition={{ repeat: Infinity, duration: 12, ease: 'linear' }}
-            className="absolute w-[300px] h-[300px] rounded-full border border-dotted border-white/20 [transform-style:preserve-3d]"
+      
+      {/* 1. COZY HEARTH: Warm Hearth Glow & Paper Texture */}
+      {theme === 'cozy' && (
+        <div className="absolute inset-0">
+          <div className="absolute inset-0 bg-[radial-gradient(#800000_0.75px,transparent_1px)] [background-size:24px_24px] opacity-20" />
+          <div
+            className="absolute -right-20 -bottom-20 w-[550px] h-[550px] rounded-full blur-[140px] opacity-25 bg-[#800000] pointer-events-none transition-transform duration-500"
+            style={{ transform: `translate(${mousePos.x * 20}px, ${mousePos.y * 20}px)` }}
           />
         </div>
       )}
 
-      {/* 2. 3D CYBER MATRIX WIREFRAME WAVES */}
-      {mode === '3d-matrix' && (
-        <div
-          className="absolute inset-0 [perspective:800px] opacity-25"
-          style={{
-            transform: `rotateX(45deg) translateY(${mousePos.y * 20}px) translateX(${mousePos.x * 20}px)`,
-            transition: 'transform 0.2s ease-out'
-          }}
-        >
-          <div className="w-[200%] h-[200%] -ml-[50%] -mt-[20%] bg-[linear-gradient(to_right,#10b98125_1px,transparent_1px),linear-gradient(to_bottom,#10b98125_1px,transparent_1px)] [background-size:48px_48px] animate-pulse" />
+      {/* 2. CHRISTMAS MORNING: Falling Festive Snowflakes */}
+      {theme === 'christmas' && (
+        <div className="absolute inset-0 opacity-30">
+          {[...Array(20)].map((_, i) => (
+            <motion.div
+              key={`snow-${i}`}
+              initial={{ top: -20, left: `${(i * 11) % 100}%` }}
+              animate={{
+                top: '110%',
+                x: [0, 15, -15, 0]
+              }}
+              transition={{
+                duration: 4.5 + (i % 4),
+                repeat: Infinity,
+                ease: 'easeInOut',
+                delay: (i * 0.7) % 7
+              }}
+              className="absolute text-white"
+            >
+              <Snowflake size={15 + (i % 3) * 6} />
+            </motion.div>
+          ))}
         </div>
       )}
 
-      {/* 3. STARRY NIGHT FALLING STARS */}
-      {mode === 'stars' && (
+      {/* 3. STARRY NIGHT: Falling Shooting Stars & Constellation */}
+      {theme === 'starry' && (
         <div className="absolute inset-0">
+          <div className="absolute inset-0 bg-[radial-gradient(#ffffff_0.8px,transparent_1px)] [background-size:28px_28px] opacity-20" />
           {[...Array(16)].map((_, i) => (
             <motion.div
               key={`star-shooting-${i}`}
@@ -92,27 +78,12 @@ export default function Interactive3DBackground({ mode = '3d-gyro', theme = 'coz
               className="absolute w-[2px] h-14 bg-gradient-to-t from-yellow-300 via-indigo-300 to-transparent -rotate-45"
             />
           ))}
-          {/* Subtle floating stardust */}
-          {[...Array(35)].map((_, i) => (
-            <div
-              key={`star-dust-${i}`}
-              className="absolute rounded-full bg-white"
-              style={{
-                width: `${(i % 3) + 1}px`,
-                height: `${(i % 3) + 1}px`,
-                top: `${(i * 29) % 100}%`,
-                left: `${(i * 31) % 100}%`,
-                opacity: 0.15 + (i % 4) * 0.15,
-                animation: `pulse ${(i % 4) + 2}s infinite`
-              }}
-            />
-          ))}
         </div>
       )}
 
-      {/* 4. NEKO FLOATING CATS */}
-      {mode === 'cats' && (
-        <div className="absolute inset-0 opacity-20">
+      {/* 4. NEKO KAWAII: Floating Cute Cat Silhouettes (ONLY for Neko) */}
+      {(theme === 'neko' || theme === 'nekoPastel') && (
+        <div className="absolute inset-0 opacity-15">
           {[...Array(5)].map((_, i) => (
             <motion.div
               key={`cat-${i}`}
@@ -138,29 +109,37 @@ export default function Interactive3DBackground({ mode = '3d-gyro', theme = 'coz
         </div>
       )}
 
-      {/* 5. COZY FALLING SNOW */}
-      {mode === 'snow' && (
-        <div className="absolute inset-0 opacity-35">
-          {[...Array(20)].map((_, i) => (
-            <motion.div
-              key={`snow-${i}`}
-              initial={{ top: -20, left: `${(i * 11) % 100}%` }}
-              animate={{
-                top: '110%',
-                x: [0, 15, -15, 0]
-              }}
-              transition={{
-                duration: 4.5 + (i % 4),
-                repeat: Infinity,
-                ease: 'easeInOut',
-                delay: (i * 0.7) % 7
-              }}
-              className="absolute text-white"
-            >
-              <Snowflake size={15 + (i % 3) * 6} />
-            </motion.div>
-          ))}
+      {/* 5. STEALTH MATRIX / CYBERPUNK: High-tech Scanlines */}
+      {(theme === 'stealth' || theme === 'cyberpunk') && (
+        <div className="absolute inset-0 opacity-20 bg-[linear-gradient(to_right,#10b98115_1px,transparent_1px),linear-gradient(to_bottom,#10b98115_1px,transparent_1px)] [background-size:32px_32px]" />
+      )}
+
+      {/* 6. MIDNIGHT NAVY / OCEAN: 3D Holographic Vault Orbit */}
+      {(theme === 'midnight' || theme === 'ocean' || theme === 'cyberPurple') && (
+        <div
+          className="absolute inset-0 flex items-center justify-center [perspective:1000px]"
+          style={{
+            transform: `rotateY(${mousePos.x * 10}deg) rotateX(${-mousePos.y * 10}deg)`,
+            transition: 'transform 0.2s ease-out'
+          }}
+        >
+          <div className="absolute w-[480px] h-[480px] rounded-full blur-[140px] opacity-20 bg-current pointer-events-none" />
+          <motion.div
+            animate={{ rotateZ: 360, rotateX: 68 }}
+            transition={{ repeat: Infinity, duration: 25, ease: 'linear' }}
+            className="absolute w-[500px] h-[500px] rounded-full border border-dashed border-white/10 [transform-style:preserve-3d]"
+          />
+          <motion.div
+            animate={{ rotateZ: -360, rotateY: 72 }}
+            transition={{ repeat: Infinity, duration: 18, ease: 'linear' }}
+            className="absolute w-[380px] h-[380px] rounded-full border border-white/15 [transform-style:preserve-3d]"
+          />
         </div>
+      )}
+
+      {/* 7. SOLAR / NORDIC / PAPER: Clean Crisp Daylight (Zero Clutter) */}
+      {(theme === 'solar' || theme === 'nordic' || theme === 'paper') && (
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/[0.02]" />
       )}
     </div>
   );
