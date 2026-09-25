@@ -10,12 +10,8 @@ export default {
         quicksand: ['Quicksand', 'sans-serif'],
         outfit: ['Outfit', 'sans-serif'],
         mono: ['JetBrains Mono', 'monospace'],
+        space: ['Space Grotesk', 'sans-serif'],
         jakarta: ['Plus Jakarta Sans', 'sans-serif'],
-      },
-      animation: {
-        'shimmer': 'shimmer 2.5s infinite linear',
-        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-        'bounce-subtle': 'bounce 2s infinite',
       },
     },
   },
