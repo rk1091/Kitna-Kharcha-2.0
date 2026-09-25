@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Direction, Prisma } from '@prisma/client';
+import { MerchantNormalizer } from '../parser/merchant/merchant-normalizer';
 
 export interface TransactionFilters {
   statementId?: string;
@@ -115,12 +116,15 @@ export class TransactionsService {
       updateData.classificationReason = 'MANUAL_OVERRIDE';
       updateData.isManualOverride = true;
 
+      const normalizer = new MerchantNormalizer();
+      const cleanKeyword = txn.normalizedDescription || (txn.description ? normalizer.normalize(txn.description) : '') || txn.description;
+
       const existingRule = await this.prisma.classificationRule.findFirst({
         where: {
           userId,
           categoryId: data.categoryId,
           source: 'AI_LEARNED',
-          name: `Auto-Learned: ${txn.normalizedDescription}`,
+          name: `Auto-Learned: ${cleanKeyword}`,
         },
       });
 
@@ -128,12 +132,14 @@ export class TransactionsService {
         await this.prisma.classificationRule.create({
           data: {
             userId,
-            name: `Auto-Learned: ${txn.normalizedDescription}`,
+            name: `Auto-Learned: ${cleanKeyword}`,
             categoryId: data.categoryId,
             conditions: {
               field: 'normalizedDescription',
               operator: 'equals',
-              value: txn.normalizedDescription,
+              value: cleanKeyword,
+              descriptionContains: cleanKeyword,
+              normalizedMerchantContains: cleanKeyword,
             },
             source: 'AI_LEARNED',
             priority: 100,

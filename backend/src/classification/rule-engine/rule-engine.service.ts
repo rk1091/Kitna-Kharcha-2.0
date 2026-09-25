@@ -43,7 +43,25 @@ export class RuleEngineService {
     const desc = (txn.description || '').toLowerCase();
     const normalizedDesc = ((txn as any).normalizedDescription || '').toLowerCase();
 
-    // 1. descriptionContains: matches against raw description OR normalizedDescription
+    // 1. Auto-learned rules: { field, operator, value }
+    if ((conditions as any).field && (conditions as any).value) {
+      const fieldName = (conditions as any).field;
+      const targetVal = String((conditions as any).value).toLowerCase().trim();
+      const rawVal = String((txn as any)[fieldName] || '').toLowerCase().trim();
+      const op = (conditions as any).operator || 'contains';
+
+      if (op === 'equals') {
+        if (rawVal !== targetVal && !desc.includes(targetVal) && !normalizedDesc.includes(targetVal)) {
+          return false;
+        }
+      } else if (op === 'contains') {
+        if (!rawVal.includes(targetVal) && !desc.includes(targetVal) && !normalizedDesc.includes(targetVal)) {
+          return false;
+        }
+      }
+    }
+
+    // 2. descriptionContains: matches against raw description OR normalizedDescription
     if (conditions.descriptionContains) {
       const target = conditions.descriptionContains.toLowerCase();
       if (!desc.includes(target) && !normalizedDesc.includes(target)) {
@@ -51,7 +69,7 @@ export class RuleEngineService {
       }
     }
 
-    // 2. keyword: matches against raw description OR normalizedDescription (for legacy/seed rules)
+    // 3. keyword: matches against raw description OR normalizedDescription (for legacy/seed rules)
     if (conditions.keyword) {
       const target = conditions.keyword.toLowerCase();
       if (!desc.includes(target) && !normalizedDesc.includes(target)) {
@@ -59,10 +77,10 @@ export class RuleEngineService {
       }
     }
 
-    // 3. normalizedMerchantContains: matches against normalizedDescription
+    // 4. normalizedMerchantContains: matches against normalizedDescription OR raw description
     if (conditions.normalizedMerchantContains) {
       const target = conditions.normalizedMerchantContains.toLowerCase();
-      if (!normalizedDesc.includes(target)) {
+      if (!normalizedDesc.includes(target) && !desc.includes(target)) {
         return false;
       }
     }

@@ -274,4 +274,79 @@ describe('RuleEngineService', () => {
       expect(result?.tags).toEqual(['bills']);
     });
   });
+
+  describe('Auto-Learned & Flexible Substring Conditions', () => {
+    it('should match auto-learned rules using field/operator/value case-insensitively', () => {
+      const rules = [
+        {
+          id: 'auto-1',
+          categoryId: 'cat-food',
+          conditions: { field: 'normalizedDescription', operator: 'equals', value: 'Swiggy' },
+          tags: ['food'],
+        },
+      ];
+      const txn = {
+        description: ': RAZ*SwiggyBangalore C',
+        normalizedDescription: 'Swiggy',
+        amountSigned: -18,
+        direction: 'DEBIT',
+      } as any;
+      const result = service.evaluate(rules as any, txn);
+      expect(result?.categoryId).toBe('cat-food');
+    });
+
+    it('should match substring in descriptionContains regardless of prefixes or noise', () => {
+      const rules = [
+        {
+          id: 'auto-2',
+          categoryId: 'cat-food',
+          conditions: { descriptionContains: 'dineout' },
+          tags: ['dining'],
+        },
+      ];
+      const txn = {
+        description: ': WWW DINEOUT CO INGURGAON C',
+        normalizedDescription: 'Dineout',
+        amountSigned: -1200,
+        direction: 'DEBIT',
+      } as any;
+      expect(service.evaluate(rules as any, txn)?.categoryId).toBe('cat-food');
+    });
+
+    it('should match Nykaa even if operator is contains or equals with noisy string', () => {
+      const rules = [
+        {
+          id: 'auto-3',
+          categoryId: 'cat-shopping',
+          conditions: { field: 'normalizedDescription', operator: 'contains', value: 'nykaa' },
+          tags: ['shopping'],
+        },
+      ];
+      const txn = {
+        description: '00: EMINYKAA VIA SMARTBUYMUMBRA C',
+        normalizedDescription: 'Nykaa',
+        amountSigned: -3499,
+        direction: 'DEBIT',
+      } as any;
+      expect(service.evaluate(rules as any, txn)?.categoryId).toBe('cat-shopping');
+    });
+
+    it('should fail when auto-learned rule value does not match transaction', () => {
+      const rules = [
+        {
+          id: 'auto-4',
+          categoryId: 'cat-shopping',
+          conditions: { field: 'normalizedDescription', operator: 'equals', value: 'Nykaa' },
+          tags: ['shopping'],
+        },
+      ];
+      const txn = {
+        description: ': RAZ*SwiggyBangalore C',
+        normalizedDescription: 'Swiggy',
+        amountSigned: -18,
+        direction: 'DEBIT',
+      } as any;
+      expect(service.evaluate(rules as any, txn)).toBeNull();
+    });
+  });
 });
