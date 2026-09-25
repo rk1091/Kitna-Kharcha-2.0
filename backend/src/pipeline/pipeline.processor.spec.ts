@@ -77,12 +77,15 @@ describe('PipelineProcessor', () => {
     } as unknown as CurrencyService;
 
     classificationService = {
-      classify: vi.fn().mockResolvedValue({
-        categoryId: 'cat123',
-        confidence: 0.9,
-        reason: 'LLM_CLASSIFIED',
-        tags: [],
-      }),
+      classify: vi.fn(),
+      classifyBatch: vi.fn().mockResolvedValue([
+        {
+          categoryId: 'cat123',
+          confidence: 0.9,
+          reason: 'LLM_CLASSIFIED',
+          tags: [],
+        },
+      ]),
     } as unknown as ClassificationService;
 
     processor = new PipelineProcessor(
@@ -104,7 +107,7 @@ describe('PipelineProcessor', () => {
     expect(parserService.parse).toHaveBeenCalled();
     expect(dedupService.isDuplicate).toHaveBeenCalled();
     expect(currencyService.convertToBase).toHaveBeenCalled();
-    expect(classificationService.classify).toHaveBeenCalled();
+    expect(classificationService.classifyBatch).toHaveBeenCalled();
     expect(prisma.transaction.create).toHaveBeenCalled();
     expect(prisma.statementUpload.update).toHaveBeenCalledWith({
       where: { id: 'upload123' },

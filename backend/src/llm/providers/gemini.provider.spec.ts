@@ -63,6 +63,19 @@ describe('GeminiProvider', () => {
       });
       expect(result).toBe('mocked response');
     });
+
+    it('should retry after 429 rate limit error', async () => {
+      mockGenerateContent
+        .mockRejectedValueOnce(new Error('[429 Too Many Requests] Resource has been exhausted. Please retry in 0.01s.'))
+        .mockResolvedValueOnce({ text: 'recovered response' });
+
+      const result = await provider.generateText({
+        prompt: 'test retry',
+      });
+
+      expect(mockGenerateContent).toHaveBeenCalledTimes(2);
+      expect(result).toBe('recovered response');
+    });
   });
 
   describe('generateStructured', () => {

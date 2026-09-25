@@ -51,4 +51,26 @@ describe('LLMClassifierService', () => {
     const result = await service.classify(txn, categories);
     expect(result).toBeNull();
   });
+
+  it('should classify multiple transactions in a single batch call', async () => {
+    const txns = [
+      { id: '1', description: 'Unknown Cafe', amountSigned: -150, direction: 'DEBIT' },
+      { id: '2', description: 'Hardware Store', amountSigned: -600, direction: 'DEBIT' },
+    ] as any[];
+    const categories = [
+      { id: 'cat-food', name: 'Food & Dining', type: 'EXPENSE' },
+      { id: 'cat-shop', name: 'Shopping', type: 'EXPENSE' },
+    ] as any[];
+
+    vi.mocked(llmService.generateStructured).mockResolvedValue([
+      { index: 0, categoryId: 'cat-food', confidence: 0.9, tags: ['cafe'] },
+      { index: 1, categoryId: 'cat-shop', confidence: 0.85, tags: ['hardware'] },
+    ]);
+
+    const results = await service.classifyBatch(txns, categories);
+    expect(results.length).toBe(2);
+    expect(results[0].categoryId).toBe('cat-food');
+    expect(results[1].categoryId).toBe('cat-shop');
+    expect(llmService.generateStructured).toHaveBeenCalledTimes(1);
+  });
 });

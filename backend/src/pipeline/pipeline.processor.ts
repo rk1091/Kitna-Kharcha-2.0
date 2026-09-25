@@ -90,11 +90,9 @@ export class PipelineProcessor extends WorkerHost {
       });
       const categories = await this.prisma.category.findMany();
 
-      // 5. Iterate transactions
-      for (const parsedTxn of parseResult.transactions) {
-        // Prepare dummy transaction for classification / dedup
+      // 5. Batch Classification & Persistence
+      const preparedTxns = parseResult.transactions.map((parsedTxn) => {
         const direction = parsedTxn.type === 'CREDIT' ? Direction.CREDIT : Direction.DEBIT;
-        
         const partialTxn = {
           statementId: statement.id,
           txnDate: parsedTxn.date,
@@ -104,13 +102,22 @@ export class PipelineProcessor extends WorkerHost {
           direction,
           amountSigned: direction === Direction.CREDIT ? parsedTxn.amount : -parsedTxn.amount,
         };
+        return { parsedTxn, direction, partialTxn };
+      });
+
+      const classResults = await this.classificationService.classifyBatch(
+        preparedTxns.map((p) => p.partialTxn as any),
+        rules as any[],
+        categories,
+      );
+
+      for (let i = 0; i < preparedTxns.length; i++) {
+        const { parsedTxn, direction, partialTxn } = preparedTxns[i];
+        const classResult = classResults[i];
 
         const isDup = await this.dedupService.isDuplicate(partialTxn as any, statement.userId, statement.bankName || undefined);
-        
         const currency = this.currencyService.detectCurrency(parsedTxn.description);
         const baseAmount = await this.currencyService.convertToBase(parsedTxn.amount, currency, statement.user.defaultCurrency);
-
-        const classResult = await this.classificationService.classify(partialTxn as any, rules as any[], categories);
 
         // Save to DB
         await this.prisma.transaction.create({
@@ -131,7 +138,7 @@ export class PipelineProcessor extends WorkerHost {
             classificationConfidence: classResult.confidence,
             isDuplicate: isDup,
             tags: classResult.tags || [],
-          }
+          },
         });
       }
 

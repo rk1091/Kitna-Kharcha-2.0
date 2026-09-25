@@ -59,6 +59,30 @@ export class GeminiProvider implements LLMProvider {
     }).catch(() => {});
   }
 
+  private async generateContentWithRetry(params: any): Promise<any> {
+    let attempts = 0;
+    while (true) {
+      try {
+        return await this.genAI.models.generateContent(params);
+      } catch (err: any) {
+        attempts++;
+        const errMsg = String(err?.message || err);
+        const isQuota429 = errMsg.includes('429') || errMsg.includes('RESOURCE_EXHAUSTED') || err?.status === 429;
+        if (attempts <= 1 && isQuota429) {
+          let waitMs = 15000;
+          const match = errMsg.match(/(?:retry\s+in\s+|retryDelay[:\s]+)(\d+(?:\.\d+)?)/i);
+          if (match && match[1]) {
+            waitMs = Math.ceil(parseFloat(match[1]) * 1000) + 100;
+          }
+          console.warn(`[GeminiProvider] Quota 429 encountered: ${errMsg}. Waiting ${waitMs}ms before retry...`);
+          await new Promise((resolve) => setTimeout(resolve, waitMs));
+          continue;
+        }
+        throw err;
+      }
+    }
+  }
+
   async generateText(options: GenerateTextOptions): Promise<string> {
     const { prompt, systemInstruction, temperature, maxOutputTokens, model, userId, operation } = options;
     const startTime = Date.now();
@@ -71,7 +95,7 @@ export class GeminiProvider implements LLMProvider {
     if (maxOutputTokens !== undefined) config.maxOutputTokens = maxOutputTokens;
 
     try {
-      const response = await this.genAI.models.generateContent({
+      const response = await this.generateContentWithRetry({
         model: modelName,
         contents: prompt,
         config: Object.keys(config).length > 0 ? config : undefined,
@@ -119,7 +143,7 @@ export class GeminiProvider implements LLMProvider {
         require('fs').writeFileSync('last-llm-prompt.txt', prompt);
       } catch (_) {}
 
-      const response = await this.genAI.models.generateContent({
+      const response = await this.generateContentWithRetry({
         model: modelName,
         contents: prompt,
         config,
@@ -165,7 +189,7 @@ export class GeminiProvider implements LLMProvider {
     if (maxOutputTokens !== undefined) config.maxOutputTokens = maxOutputTokens;
 
     try {
-      const response = await this.genAI.models.generateContent({
+      const response = await this.generateContentWithRetry({
         model: modelName,
         contents: prompt,
         config,
