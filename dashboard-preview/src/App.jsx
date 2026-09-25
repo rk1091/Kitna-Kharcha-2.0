@@ -416,7 +416,12 @@ export default function App() {
           </button>
         </div>
 
-        <LoginPage onLogin={() => setCurrentView('dashboard')} />
+        <LoginPage 
+          theme={theme}
+          themeStyles={themeStyles}
+          onThemeChange={(newTheme) => setTheme(newTheme)}
+          onLogin={() => setCurrentView('dashboard')} 
+        />
       </div>
     );
   }
