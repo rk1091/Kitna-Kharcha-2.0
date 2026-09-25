@@ -46,13 +46,42 @@ export class MerchantNormalizer {
     { pattern: /\b(BESCOM)\b/i, canonicalName: 'Bescom' },
   ];
 
+  // Primary substring dictionary: If keyword is anywhere in text, match immediately
+  private readonly substringDictionary: Array<{ keyword: string; canonicalName: string }> = [
+    { keyword: 'swiggy', canonicalName: 'Swiggy' },
+    { keyword: 'zomato', canonicalName: 'Zomato' },
+    { keyword: 'dineout', canonicalName: 'Dineout' },
+    { keyword: 'nykaa', canonicalName: 'Nykaa' },
+    { keyword: 'blinkit', canonicalName: 'Blinkit' },
+    { keyword: 'grofers', canonicalName: 'Blinkit' },
+    { keyword: 'zepto', canonicalName: 'Zepto' },
+    { keyword: 'amazon', canonicalName: 'Amazon' },
+    { keyword: 'amzn', canonicalName: 'Amazon' },
+    { keyword: 'flipkart', canonicalName: 'Flipkart' },
+    { keyword: 'myntra', canonicalName: 'Myntra' },
+    { keyword: 'ajio', canonicalName: 'Ajio' },
+    { keyword: 'uber', canonicalName: 'Uber' },
+    { keyword: 'makemytrip', canonicalName: 'MakeMyTrip' },
+    { keyword: 'irctc', canonicalName: 'Irctc' },
+    { keyword: 'netflix', canonicalName: 'Netflix' },
+    { keyword: 'spotify', canonicalName: 'Spotify' },
+    { keyword: 'hotstar', canonicalName: 'Disney+ Hotstar' },
+    { keyword: 'google play', canonicalName: 'Google Play' },
+    { keyword: 'zerodha', canonicalName: 'Zerodha' },
+    { keyword: 'groww', canonicalName: 'Groww' },
+    { keyword: 'cred', canonicalName: 'Cred' },
+    { keyword: 'airtel', canonicalName: 'Airtel' },
+    { keyword: 'tata power', canonicalName: 'Tata Power' },
+    { keyword: 'bescom', canonicalName: 'Bescom' },
+  ];
+
   // Locations / state codes to strip from trailing parts of narrative
   private readonly locationSuffixRegex =
     /\s+(?:(?:NEW\s+DELHI|DELHI|MUMBAI|BANGALORE|BENGALURU|HYDERABAD|CHENNAI|PUNE|KOLKATA|NOIDA|GURGAON|GURUGRAM|AHMEDABAD)(?:\s+(?:IN|KA|MH|DL|TN|TS|UP|GJ))?|IN|KA|MH|DL|TN|TS|UP|GJ)$/i;
 
   // Gateways and aggregators to strip
   private readonly gatewayRegex =
-    /(?:\/(?:RAZORPAY|PAYU|BILLDESK|CCAVENUE|CASHFREE)(?:\/[\w-]+)*|\b(?:PAYU|CCAVENUE|CASHFREE|RAZORPAY)\*)/gi;
+    /(?:\/(?:RAZORPAY|RAZ|PAYU|BILLDESK|CCAVENUE|CASHFREE)(?:\/[\w-]+)*|\b(?:PAYU|CCAVENUE|CASHFREE|RAZORPAY|RAZ)\*)/gi;
 
   normalize(rawMerchant?: string | null): string {
     if (!rawMerchant || typeof rawMerchant !== 'string') {
@@ -62,31 +91,65 @@ export class MerchantNormalizer {
     let text = rawMerchant.trim();
     if (!text) return '';
 
-    // Step 0: Handle VPA/handle format (e.g. swiggy@hdfcbank -> swiggy, zomato.order@icici -> zomato order)
+    // Step 0: Check fast substring containment first (case-insensitive)
+    const lowerRaw = text.toLowerCase();
+    for (const entry of this.substringDictionary) {
+      if (lowerRaw.includes(entry.keyword)) {
+        return entry.canonicalName;
+      }
+    }
+
+    // Handle VPA/handle format (e.g. swiggy@hdfcbank -> swiggy, zomato.order@icici -> zomato order)
     if (/^[\w.-]+@[a-zA-Z]+$/.test(text)) {
       text = text.split('@')[0].replace(/[._-]+/g, ' ');
     }
 
-    // Step 1: Strip M/s honorific prefix early to prevent slash splitting errors
+    // Strip leading time / timestamp noise (e.g. "19:14:00:", "00:00:00:", "00:", "0:")
+    text = text.replace(/^\s*(?:\d{1,2}:)?\d{1,2}(?::\d{1,2})?\s*:?\s*/, '').trim();
+
+    // Strip leading punctuation (colons, dashes, slashes, asterisks)
+    text = text.replace(/^[:\-\/*\s]+/, '').trim();
+
+    // Strip EMI prefixes (e.g. "EMINYKAA" -> "NYKAA", "EMI NYKAA" -> "NYKAA")
+    text = text.replace(/^EMI\s*(?=[A-Za-z])/i, '').trim();
+
+    // Strip website wrappers (e.g. "WWW DINEOUT CO IN" -> "DINEOUT")
+    text = text.replace(/^WWW\s+(.*?)\s+(?:CO\s+IN|COM|IN)\b/i, '$1').trim();
+
+    // Strip SmartBuy aggregator
+    text = text.replace(/\bVIA\s+SMARTBUY(?:\w+)?/gi, '').trim();
+
+    // Strip M/s honorific prefix early to prevent slash splitting errors
     text = text.replace(/\bM\/[sS][.\s/-]*/gi, '').trim();
 
-    // Step 2: Strip payment rail prefixes and routing data
+    // Strip payment rail prefixes and routing data
     text = this.stripPaymentRailPrefixes(text);
 
-    // Step 3: Strip payment gateways / aggregators
+    // Strip payment gateways / aggregators
     text = text.replace(this.gatewayRegex, ' ').trim();
 
-    // Step 4: Check canonical alias dictionary FIRST
+    // Re-check substring dictionary after stripping rail prefixes
+    const lowerCleaned = text.toLowerCase();
+    for (const entry of this.substringDictionary) {
+      if (lowerCleaned.includes(entry.keyword)) {
+        return entry.canonicalName;
+      }
+    }
+
+    // Check canonical alias dictionary
     for (const rule of this.canonicalRules) {
       if (rule.pattern.test(text)) {
         return rule.canonicalName;
       }
     }
 
-    // Step 5: Strip location suffixes
+    // Strip trailing credit/debit indicators (e.g. " C", " D")
+    text = text.replace(/\s+[CD]$/i, '').trim();
+
+    // Strip location suffixes
     text = text.replace(this.locationSuffixRegex, '').trim();
 
-    // Step 6: Strip corporate entity suffixes
+    // Strip corporate entity suffixes
     text = text
       .replace(
         /\s+(?:PVT\.?\s*LTD\.?|PRIVATE\s+LIMITED|LTD\.?|LIMITED|LLP|INC\.?|CORP\.?)\b/gi,
@@ -94,7 +157,7 @@ export class MerchantNormalizer {
       )
       .trim();
 
-    // Step 7: Collapse whitespace and apply Title Case
+    // Collapse whitespace and apply Title Case
     text = text.replace(/\s+/g, ' ').trim();
     return this.toTitleCase(text);
   }

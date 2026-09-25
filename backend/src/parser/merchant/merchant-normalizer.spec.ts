@@ -140,4 +140,18 @@ describe('MerchantNormalizer', () => {
       expect(normalizer.normalize('chai point indiranagar')).toBe('Chai Point Indiranagar');
     });
   });
+
+  describe('Noisy Bank Formats & Substring Matching', () => {
+    it('should recognize Swiggy even with colons, gateways, and attached city names', () => {
+      expect(normalizer.normalize(': RAZ*SwiggyBangalore C')).toBe('Swiggy');
+    });
+
+    it('should recognize Dineout with website domain wrappers', () => {
+      expect(normalizer.normalize(': WWW DINEOUT CO INGURGAON C')).toBe('Dineout');
+    });
+
+    it('should recognize Nykaa with timestamps, EMI prefixes, and SmartBuy aggregators', () => {
+      expect(normalizer.normalize('00: EMINYKAA VIA SMARTBUYMUMBRA C')).toBe('Nykaa');
+    });
+  });
 });
