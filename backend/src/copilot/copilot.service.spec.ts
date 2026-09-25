@@ -27,6 +27,14 @@ describe('CopilotService', () => {
         update: vi.fn(),
         deleteMany: vi.fn(),
       },
+      category: {
+        findFirst: vi.fn(),
+        findMany: vi.fn(),
+      },
+      classificationRule: {
+        create: vi.fn(),
+        findFirst: vi.fn(),
+      },
     };
 
     recurringMock = {
@@ -40,9 +48,9 @@ describe('CopilotService', () => {
     );
   });
 
-  it('should define all 8 copilot tools', () => {
+  it('should define all 9 copilot tools', () => {
     const tools = service.getToolDefinitions();
-    expect(tools).toHaveLength(8);
+    expect(tools).toHaveLength(9);
     const names = tools.map(t => t.name);
     expect(names).toContain('query_transactions');
     expect(names).toContain('get_monthly_trend');
@@ -52,6 +60,7 @@ describe('CopilotService', () => {
     expect(names).toContain('merchant_analysis');
     expect(names).toContain('get_category_breakdown');
     expect(names).toContain('detect_anomalies');
+    expect(names).toContain('create_classification_rule');
   });
 
   it('should execute query_transactions tool correctly', async () => {
@@ -250,5 +259,39 @@ describe('CopilotService', () => {
     expect(prismaMock.copilotSession.deleteMany).toHaveBeenCalledWith({
       where: { userId: 'user-1' },
     });
+  });
+
+  it('should dispatch create_classification_rule and insert user rule in DB', async () => {
+    prismaMock.category.findFirst.mockResolvedValue({
+      id: 'cat-shopping',
+      name: 'Shopping',
+    });
+    prismaMock.classificationRule.create.mockResolvedValue({
+      id: 'rule-1',
+    });
+
+    const result = await service.dispatchTool('user-1', 'create_classification_rule', {
+      merchantKeyword: 'Nykaa',
+      categoryName: 'Shopping',
+      tags: ['beauty', 'shopping'],
+    });
+
+    expect(result).toContain('Created rule');
+    expect(result).toContain('Nykaa');
+    expect(result).toContain('Shopping');
+    expect(prismaMock.classificationRule.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          userId: 'user-1',
+          categoryId: 'cat-shopping',
+          source: 'USER',
+          priority: 50,
+          conditions: {
+            descriptionContains: 'Nykaa',
+            normalizedMerchantContains: 'Nykaa',
+          },
+        }),
+      }),
+    );
   });
 });

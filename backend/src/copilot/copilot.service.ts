@@ -210,6 +210,19 @@ Always answer in Indian Rupees (₹). Be concise, friendly, analytical, and sugg
           },
         },
       },
+      {
+        name: 'create_classification_rule',
+        description: 'Create a custom categorization rule for a specific merchant or keyword.',
+        parameters: {
+          type: 'OBJECT',
+          properties: {
+            merchantKeyword: { type: 'STRING', description: 'Merchant name or keyword to match (e.g. Swiggy, Nykaa, Dineout)' },
+            categoryName: { type: 'STRING', description: 'Target category name (e.g. Food & Dining, Shopping)' },
+            tags: { type: 'ARRAY', items: { type: 'STRING' }, description: 'Optional list of tags' },
+          },
+          required: ['merchantKeyword', 'categoryName'],
+        },
+      },
     ];
   }
 
@@ -237,6 +250,8 @@ Always answer in Indian Rupees (₹). Be concise, friendly, analytical, and sugg
         return this.executeCategoryBreakdown(userId, args.startDate, args.endDate, args.direction);
       case 'detect_anomalies':
         return this.executeDetectAnomalies(userId, args?.thresholdMultiplier || 3);
+      case 'create_classification_rule':
+        return this.executeCreateRule(userId, args);
       default:
         return `Error: Tool '${toolName}' is not recognized.`;
     }
@@ -545,5 +560,46 @@ ${details}`;
     ).join('\n');
 
     return `Detected ${anomalies.length} spending spike(s) exceeding ${thresholdMultiplier}x average (Threshold: ₹${threshold.toFixed(2)}):\n${details}`;
+  }
+
+  // --- TOOL 9: create_classification_rule ---
+  public async executeCreateRule(userId: string, args: Record<string, any>): Promise<string> {
+    const merchantKeyword = (args.merchantKeyword || '').trim();
+    const categoryName = (args.categoryName || '').trim();
+    const tags = Array.isArray(args.tags) ? args.tags : [];
+
+    if (!merchantKeyword || !categoryName) {
+      return 'Error: Both merchantKeyword and categoryName are required to create a classification rule.';
+    }
+
+    // Find category matching categoryName case-insensitively
+    const category = await this.prisma.category.findFirst({
+      where: {
+        name: { equals: categoryName, mode: 'insensitive' },
+      },
+    });
+
+    if (!category) {
+      const allCategories = await this.prisma.category.findMany({ select: { name: true } });
+      const names = allCategories.map((c) => c.name).join(', ');
+      return `Category "${categoryName}" not found. Available categories are: ${names}`;
+    }
+
+    const rule = await this.prisma.classificationRule.create({
+      data: {
+        userId,
+        name: `User Rule: ${merchantKeyword}`,
+        categoryId: category.id,
+        tags,
+        source: 'USER',
+        priority: 50,
+        conditions: {
+          descriptionContains: merchantKeyword,
+          normalizedMerchantContains: merchantKeyword,
+        },
+      },
+    });
+
+    return `Created rule: "${merchantKeyword}" will be automatically classified as "${category.name}". (Rule ID: ${rule.id})`;
   }
 }
