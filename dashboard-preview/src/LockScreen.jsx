@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ShieldCheck,
@@ -18,10 +18,87 @@ import {
   Radio,
   RefreshCw,
   SlidersHorizontal,
-  ChevronRight
+  ChevronRight,
+  Mail,
+  Chrome,
+  Layers,
+  Compass
 } from 'lucide-react';
 
 export default function LockScreen({ onUnlock }) {
+  // Lock Screen Design Tabs:
+  // 'design1': 3D Gyroscopic Rings Vault (Original Assistant Generation from c4ad888)
+  // 'design2': Living 3D Morphing Organic Orb & Glassmorphism Card (from 20e122a)
+  const [activeTab, setActiveTab] = useState('design1');
+
+  return (
+    <div className="relative min-h-screen w-full overflow-hidden bg-black select-none font-sans text-white">
+      
+      {/* ======================================================== */}
+      {/* FLOATING TOP DESIGN SELECTOR TABS                        */}
+      {/* ======================================================== */}
+      <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1.5 p-1 rounded-full bg-black/80 border border-white/20 backdrop-blur-2xl shadow-2xl text-xs font-semibold">
+        <button
+          onClick={() => setActiveTab('design1')}
+          className={`flex items-center gap-2 px-4 py-1.5 rounded-full transition-all cursor-pointer ${
+            activeTab === 'design1'
+              ? 'bg-white text-black font-bold shadow-lg scale-105'
+              : 'text-white/60 hover:text-white hover:bg-white/10'
+          }`}
+          title="Design 1: 3-Axis Gyroscopic Rings Vault with Cosmic/Cyber/Solar scenes"
+        >
+          <span>🪐</span>
+          <span>Design 1: 3D Gyro Vault</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('design2')}
+          className={`flex items-center gap-2 px-4 py-1.5 rounded-full transition-all cursor-pointer ${
+            activeTab === 'design2'
+              ? 'bg-white text-black font-bold shadow-lg scale-105'
+              : 'text-white/60 hover:text-white hover:bg-white/10'
+          }`}
+          title="Design 2: Living 3D Morphing Organic Orb with Glassmorphism Card"
+        >
+          <span>💎</span>
+          <span>Design 2: Living Orb & Glass</span>
+        </button>
+      </div>
+
+      {/* RENDER ACTIVE LOCK SCREEN DESIGN */}
+      <AnimatePresence mode="wait">
+        {activeTab === 'design1' ? (
+          <motion.div
+            key="tab1"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25 }}
+            className="w-full h-full"
+          >
+            <LockScreenDesign1 onUnlock={onUnlock} />
+          </motion.div>
+        ) : (
+          <motion.div
+            key="tab2"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25 }}
+            className="w-full h-full"
+          >
+            <LockScreenDesign2 onUnlock={onUnlock} />
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+// =========================================================================
+// DESIGN 1: 3D GYROSCOPIC VAULT (ORIGINAL GENERATION FROM c4ad888)
+// =========================================================================
+function LockScreenDesign1({ onUnlock }) {
   const [authMode, setAuthMode] = useState('biometric'); // 'biometric' | 'pin' | 'password'
   const [visualMode, setVisualMode] = useState('cosmic'); // 'cosmic' | 'cyber' | 'solar'
   const [pin, setPin] = useState('');
@@ -31,7 +108,6 @@ export default function LockScreen({ onUnlock }) {
   const [scanSuccess, setScanSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
-  // Visual Themes configuration for Left Canvas
   const visuals = {
     cosmic: {
       name: 'Cosmic Nebula',
@@ -73,7 +149,6 @@ export default function LockScreen({ onUnlock }) {
 
   const v = visuals[visualMode];
 
-  // Handle Biometric Simulated Scan
   const handleBiometricScan = () => {
     if (isScanning || scanSuccess) return;
     setIsScanning(true);
@@ -87,7 +162,6 @@ export default function LockScreen({ onUnlock }) {
     }, 1200);
   };
 
-  // Handle PIN Input
   const handlePinPress = (digit) => {
     if (pin.length < 6) {
       const nextPin = pin + digit;
@@ -107,7 +181,6 @@ export default function LockScreen({ onUnlock }) {
     setIsScanning(true);
     setTimeout(() => {
       setIsScanning(false);
-      // Demo PIN check (accepts anything or 202609)
       if (code === '202609' || code.length === 6) {
         setScanSuccess(true);
         setTimeout(() => onUnlock(), 600);
@@ -134,12 +207,11 @@ export default function LockScreen({ onUnlock }) {
 
   return (
     <div className={`min-h-screen bg-gradient-to-br ${v.bgGradient} text-white font-inter flex flex-col lg:flex-row relative overflow-hidden select-none`}>
-      
-      {/* Dynamic Background Mesh Overlay */}
+      {/* Background Mesh Overlay */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.03)_1px,transparent_1px)] [background-size:28px_28px] pointer-events-none" />
 
       {/* Visual Mode Selector Floating Pill */}
-      <div className="absolute top-6 left-6 z-40 flex items-center gap-1.5 p-1.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-xl">
+      <div className="absolute top-16 lg:top-6 left-6 z-40 flex items-center gap-1.5 p-1.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-xl">
         <span className="text-[10px] font-bold uppercase tracking-wider text-white/40 px-2 flex items-center gap-1">
           <SlidersHorizontal size={11} /> Scene
         </span>
@@ -147,7 +219,7 @@ export default function LockScreen({ onUnlock }) {
           <button
             key={mode}
             onClick={() => setVisualMode(mode)}
-            className={`px-3 py-1 rounded-full text-xs font-semibold transition-all duration-200 ${
+            className={`px-3 py-1 rounded-full text-xs font-semibold transition-all duration-200 cursor-pointer ${
               visualMode === mode
                 ? 'bg-white/15 text-white shadow-sm ring-1 ring-white/20'
                 : 'text-white/50 hover:text-white hover:bg-white/5'
@@ -158,13 +230,11 @@ export default function LockScreen({ onUnlock }) {
         ))}
       </div>
 
-      {/* ======================================================== */}
-      {/* LEFT COLUMN: 3D HOLOGRAPHIC VAULT & HARDWARE TELEMETRY   */}
-      {/* ======================================================== */}
+      {/* --- LEFT COLUMN: 3D HOLOGRAPHIC VAULT & TELEMETRY --- */}
       <div className="w-full lg:w-7/12 relative flex flex-col justify-between p-8 sm:p-12 lg:p-16 min-h-[460px] lg:min-h-screen border-b lg:border-b-0 lg:border-r border-white/10 z-10 overflow-hidden">
         
         {/* Top Header info */}
-        <div className="pt-10 lg:pt-2 flex items-center gap-3">
+        <div className="pt-20 lg:pt-14 flex items-center gap-3">
           <div className="w-10 h-10 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center backdrop-blur-md shadow-lg">
             <ShieldCheck size={22} className={v.accentText} />
           </div>
@@ -181,7 +251,6 @@ export default function LockScreen({ onUnlock }) {
 
         {/* Center: 3D Holographic Vault Orb with Gyroscopic Rings */}
         <div className="my-auto py-8 flex flex-col items-center justify-center relative">
-          
           {/* Ambient Aura Glow behind the 3D Sphere */}
           <div
             className="absolute w-72 h-72 sm:w-96 sm:h-96 rounded-full blur-[100px] pointer-events-none transition-all duration-1000"
@@ -190,7 +259,6 @@ export default function LockScreen({ onUnlock }) {
 
           {/* 3D Gyroscopic Rings System */}
           <div className="relative w-64 h-64 sm:w-80 sm:h-80 flex items-center justify-center [perspective:1000px]">
-            
             {/* Outer Gyro Ring 1 (Horizontal tilt orbit) */}
             <motion.div
               animate={{ rotateZ: 360, rotateX: 65 }}
@@ -259,17 +327,14 @@ export default function LockScreen({ onUnlock }) {
         </div>
       </div>
 
-      {/* ======================================================== */}
-      {/* RIGHT COLUMN: MODERN SLEEK GLASS LOGIN / UNLOCK CARD     */}
-      {/* ======================================================== */}
-      <div className="w-full lg:w-5/12 flex items-center justify-center p-6 sm:p-10 lg:p-12 z-20">
+      {/* --- RIGHT COLUMN: MODERN SLEEK GLASS LOGIN CARD --- */}
+      <div className="w-full lg:w-5/12 flex items-center justify-center p-6 sm:p-10 lg:p-12 z-20 pt-16 lg:pt-12">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
           className="w-full max-w-md rounded-[2.5rem] bg-white/[0.04] backdrop-blur-2xl border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.6)] p-6 sm:p-9 relative overflow-hidden"
         >
-          {/* Subtle Top Glow Accent */}
           <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-white/30 to-transparent" />
 
           {/* User Profile Avatar / Session Badge */}
@@ -296,7 +361,7 @@ export default function LockScreen({ onUnlock }) {
           <div className="grid grid-cols-3 gap-1.5 p-1 rounded-2xl bg-black/40 border border-white/10 mb-7 text-xs font-semibold">
             <button
               onClick={() => { setAuthMode('biometric'); setErrorMsg(''); }}
-              className={`py-2 rounded-xl flex items-center justify-center gap-1.5 transition-all duration-200 ${
+              className={`py-2 rounded-xl flex items-center justify-center gap-1.5 transition-all duration-200 cursor-pointer ${
                 authMode === 'biometric'
                   ? 'bg-white/15 text-white shadow-md'
                   : 'text-white/50 hover:text-white'
@@ -307,7 +372,7 @@ export default function LockScreen({ onUnlock }) {
             </button>
             <button
               onClick={() => { setAuthMode('pin'); setErrorMsg(''); }}
-              className={`py-2 rounded-xl flex items-center justify-center gap-1.5 transition-all duration-200 ${
+              className={`py-2 rounded-xl flex items-center justify-center gap-1.5 transition-all duration-200 cursor-pointer ${
                 authMode === 'pin'
                   ? 'bg-white/15 text-white shadow-md'
                   : 'text-white/50 hover:text-white'
@@ -318,7 +383,7 @@ export default function LockScreen({ onUnlock }) {
             </button>
             <button
               onClick={() => { setAuthMode('password'); setErrorMsg(''); }}
-              className={`py-2 rounded-xl flex items-center justify-center gap-1.5 transition-all duration-200 ${
+              className={`py-2 rounded-xl flex items-center justify-center gap-1.5 transition-all duration-200 cursor-pointer ${
                 authMode === 'password'
                   ? 'bg-white/15 text-white shadow-md'
                   : 'text-white/50 hover:text-white'
@@ -337,9 +402,7 @@ export default function LockScreen({ onUnlock }) {
             </div>
           )}
 
-          {/* -------------------------------------------------------- */}
-          {/* TAB 1: BIOMETRIC UNLOCK (Touch ID / Face ID)             */}
-          {/* -------------------------------------------------------- */}
+          {/* TAB 1: BIOMETRIC UNLOCK */}
           {authMode === 'biometric' && (
             <div className="py-4 flex flex-col items-center justify-center text-center space-y-6">
               <div
@@ -347,14 +410,12 @@ export default function LockScreen({ onUnlock }) {
                 className="relative cursor-pointer group"
                 title="Click to scan fingerprint / Passkey"
               >
-                {/* Outer Ripple Rings */}
                 <motion.div
                   animate={isScanning ? { scale: [1, 1.3, 1], opacity: [0.6, 0.2, 0.6] } : {}}
                   transition={{ repeat: Infinity, duration: 1.5 }}
                   className="absolute -inset-4 rounded-full border border-white/20"
                 />
 
-                {/* Main Fingerprint Button */}
                 <div
                   className={`w-24 h-24 rounded-full border-2 flex items-center justify-center transition-all duration-300 relative overflow-hidden ${
                     scanSuccess
@@ -364,7 +425,6 @@ export default function LockScreen({ onUnlock }) {
                       : 'border-white/20 bg-white/5 text-white/80 group-hover:border-white/40 group-hover:bg-white/10 group-hover:scale-105'
                   }`}
                 >
-                  {/* Laser Scanning Beam Line */}
                   {isScanning && (
                     <motion.div
                       animate={{ y: [-48, 48, -48] }}
@@ -382,173 +442,360 @@ export default function LockScreen({ onUnlock }) {
               </div>
 
               <div>
-                <h5 className="font-semibold text-base">
+                <p className="text-sm font-semibold">
                   {scanSuccess
-                    ? 'Vault Decrypted!'
+                    ? 'Identity Authenticated'
                     : isScanning
-                    ? 'Verifying Passkey Signature...'
-                    : 'Touch ID / WebAuthn Passkey'}
-                </h5>
-                <p className="text-xs text-white/50 mt-1">
-                  {scanSuccess
-                    ? 'Opening Kitna Kharcha 2.0...'
-                    : 'Touch your sensor or click to authenticate with local biometric enclave'}
+                    ? 'Scanning Touch ID Enclave...'
+                    : 'Tap Fingerprint Sensor to Unlock'}
+                </p>
+                <p className="text-xs text-white/40 mt-1">
+                  Biometrics matched locally via Secure Enclave
                 </p>
               </div>
 
               <button
                 onClick={handleBiometricScan}
                 disabled={isScanning || scanSuccess}
-                className={`w-full py-3.5 px-4 rounded-2xl text-xs font-bold transition-all duration-200 flex items-center justify-center gap-2 ${
-                  v.button
-                } hover:opacity-95 active:scale-[0.98] shadow-lg`}
+                className={`w-full py-3.5 rounded-2xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer transition-all ${v.button}`}
               >
                 {isScanning ? (
                   <>
                     <RefreshCw size={15} className="animate-spin" />
-                    <span>Verifying Hardware Key...</span>
+                    <span>Verifying...</span>
                   </>
                 ) : scanSuccess ? (
                   <>
-                    <CheckCircle2 size={16} />
-                    <span>Access Granted</span>
+                    <CheckCircle2 size={15} />
+                    <span>Unsealed</span>
                   </>
                 ) : (
                   <>
-                    <Fingerprint size={16} />
-                    <span>Scan Fingerprint / Face ID</span>
+                    <span>Simulate Touch ID Unlock</span>
+                    <ArrowRight size={15} />
                   </>
                 )}
               </button>
             </div>
           )}
 
-          {/* -------------------------------------------------------- */}
-          {/* TAB 2: QUICK 6-DIGIT PIN                                 */}
-          {/* -------------------------------------------------------- */}
+          {/* TAB 2: PIN CODE ENTRY */}
           {authMode === 'pin' && (
             <div className="space-y-6">
-              {/* PIN Dot Indicators */}
-              <div className="flex justify-center gap-3 py-2">
-                {[0, 1, 2, 3, 4, 5].map((index) => {
-                  const filled = pin.length > index;
-                  return (
-                    <div
-                      key={index}
-                      className={`w-4 h-4 rounded-full transition-all duration-200 border ${
-                        filled
-                          ? 'bg-white border-white scale-110 shadow-[0_0_10px_rgba(255,255,255,0.8)]'
-                          : 'border-white/20 bg-white/5'
-                      }`}
-                    />
-                  );
-                })}
+              <div className="flex justify-center items-center gap-3 py-2">
+                {[...Array(6)].map((_, i) => (
+                  <div
+                    key={i}
+                    className={`w-4 h-4 rounded-full border transition-all duration-200 ${
+                      pin.length > i
+                        ? 'bg-white border-white scale-110 shadow-[0_0_10px_white]'
+                        : 'border-white/30 bg-transparent'
+                    }`}
+                  />
+                ))}
               </div>
 
-              {/* Numpad 3x4 Grid */}
               <div className="grid grid-cols-3 gap-2.5 max-w-[280px] mx-auto">
-                {['1', '2', '3', '4', '5', '6', '7', '8', '9', 'C', '0', '⌫'].map((key) => {
-                  const isAction = key === 'C' || key === '⌫';
-                  return (
-                    <button
-                      key={key}
-                      onClick={() => {
-                        if (key === 'C') setPin('');
-                        else if (key === '⌫') handlePinDelete();
-                        else handlePinPress(key);
-                      }}
-                      className={`h-12 rounded-2xl flex items-center justify-center font-mono font-bold text-base transition-all duration-150 active:scale-90 ${
-                        isAction
-                          ? 'bg-white/5 text-white/50 hover:bg-white/10 hover:text-white'
-                          : 'bg-white/10 text-white hover:bg-white/20 border border-white/5 shadow-sm'
-                      }`}
-                    >
-                      {key}
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Demo Helper Button */}
-              <div className="pt-1 text-center">
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
+                  <button
+                    key={num}
+                    onClick={() => handlePinPress(num.toString())}
+                    className="h-12 rounded-2xl bg-white/5 hover:bg-white/15 border border-white/10 active:scale-95 font-semibold text-lg transition-all flex items-center justify-center cursor-pointer"
+                  >
+                    {num}
+                  </button>
+                ))}
                 <button
-                  onClick={() => {
-                    setPin('202609');
-                    verifyPin('202609');
-                  }}
-                  className="text-xs text-white/40 hover:text-white/80 transition-colors underline underline-offset-4"
+                  onClick={() => setPin('')}
+                  className="h-12 rounded-2xl bg-white/5 hover:bg-white/10 text-xs font-semibold uppercase text-white/50 transition-all flex items-center justify-center cursor-pointer"
                 >
-                  Quick Fill Demo PIN (202609)
+                  Clear
+                </button>
+                <button
+                  onClick={() => handlePinPress('0')}
+                  className="h-12 rounded-2xl bg-white/5 hover:bg-white/15 border border-white/10 active:scale-95 font-semibold text-lg transition-all flex items-center justify-center cursor-pointer"
+                >
+                  0
+                </button>
+                <button
+                  onClick={handlePinDelete}
+                  className="h-12 rounded-2xl bg-white/5 hover:bg-white/10 text-xs font-semibold uppercase text-white/50 transition-all flex items-center justify-center cursor-pointer"
+                >
+                  ⌫
                 </button>
               </div>
+
+              <p className="text-[11px] text-center text-white/40 font-mono">
+                Tip: Enter any 6 digits to unlock
+              </p>
             </div>
           )}
 
-          {/* -------------------------------------------------------- */}
-          {/* TAB 3: MASTER PASSWORD FORM                              */}
-          {/* -------------------------------------------------------- */}
+          {/* TAB 3: MASTER PASSWORD ENTRY */}
           {authMode === 'password' && (
-            <form onSubmit={handlePasswordSubmit} className="space-y-4 pt-2">
+            <form onSubmit={handlePasswordSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-white/60 mb-1.5">
-                  Vault Master Password
+                <label className="text-[11px] font-bold text-white/50 uppercase tracking-widest ml-1 mb-2 block">
+                  Master Password
                 </label>
                 <div className="relative">
                   <input
                     type={showPassword ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Enter your cryptographic passphrase"
-                    className="w-full px-4 py-3 rounded-2xl bg-black/40 border border-white/15 focus:border-white/40 focus:ring-1 focus:ring-white/40 text-sm text-white placeholder-white/30 outline-none pr-10 transition-colors"
+                    placeholder="Enter passphrase..."
+                    className="w-full bg-white/5 border border-white/15 rounded-2xl py-3.5 pl-4 pr-11 text-sm text-white placeholder-white/30 outline-none focus:border-white/50 focus:ring-2 focus:ring-white/10 transition-all"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white transition-colors"
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/50 hover:text-white transition-colors cursor-pointer"
                   >
                     {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
                 </div>
               </div>
 
-              <div className="flex items-center justify-between text-xs text-white/50">
-                <label className="flex items-center gap-2 cursor-pointer select-none">
-                  <input type="checkbox" defaultChecked className="rounded accent-white" />
-                  <span>Remember on this hardware</span>
-                </label>
-                <span className="text-white/40 hover:text-white cursor-pointer">Forgot?</span>
-              </div>
-
               <button
                 type="submit"
                 disabled={isScanning || scanSuccess}
-                className={`w-full py-3.5 px-4 rounded-2xl text-xs font-bold transition-all duration-200 flex items-center justify-center gap-2 ${
-                  v.button
-                } hover:opacity-95 active:scale-[0.98] shadow-lg mt-2`}
+                className={`w-full py-4 rounded-2xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer transition-all ${v.button}`}
               >
                 {isScanning ? (
                   <>
                     <RefreshCw size={15} className="animate-spin" />
-                    <span>Decrypting Database...</span>
+                    <span>Decrypting...</span>
+                  </>
+                ) : scanSuccess ? (
+                  <>
+                    <CheckCircle2 size={15} />
+                    <span>Unlocked</span>
                   </>
                 ) : (
                   <>
-                    <Unlock size={16} />
-                    <span>Unlock Vault</span>
+                    <span>Decrypt & Open Vault</span>
+                    <ArrowRight size={15} />
                   </>
                 )}
               </button>
             </form>
           )}
 
-          {/* Quick Demo Bypass Button */}
-          <div className="mt-8 pt-6 border-t border-white/10 text-center">
+          <div className="mt-8 pt-4 border-t border-white/10 flex items-center justify-between text-xs text-white/40">
+            <span className="font-mono text-[10px]">AUTH_GATEWAY: 0x48FA</span>
             <button
               onClick={onUnlock}
-              className="text-xs font-semibold text-white/60 hover:text-white flex items-center justify-center gap-1.5 mx-auto transition-colors group"
+              className="text-white/70 hover:text-white hover:underline text-[11px] flex items-center gap-1 cursor-pointer font-bold"
             >
-              <span>Skip directly to Live Dashboard</span>
-              <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+              <span>Direct Dashboard ➔</span>
+            </button>
+          </div>
+        </motion.div>
+      </div>
+    </div>
+  );
+}
+
+// =========================================================================
+// DESIGN 2: LIVING 3D MORPHING ORGANIC ORB & GLASS (FROM 20e122a)
+// =========================================================================
+function LockScreenDesign2({ onUnlock }) {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isAuthenticating, setIsAuthenticating] = useState(false);
+  const [authSuccess, setAuthSuccess] = useState(false);
+
+  const handleUnseal = (e) => {
+    if (e) e.preventDefault();
+    if (isAuthenticating || authSuccess) return;
+    setIsAuthenticating(true);
+    setTimeout(() => {
+      setIsAuthenticating(false);
+      setAuthSuccess(true);
+      setTimeout(() => {
+        if (onUnlock) onUnlock();
+      }, 600);
+    }, 1000);
+  };
+
+  const handleBiometric = () => {
+    if (isAuthenticating || authSuccess) return;
+    setIsAuthenticating(true);
+    setTimeout(() => {
+      setIsAuthenticating(false);
+      setAuthSuccess(true);
+      setTimeout(() => {
+        if (onUnlock) onUnlock();
+      }, 500);
+    }, 800);
+  };
+
+  return (
+    <div className="min-h-screen bg-[#050505] flex flex-col md:flex-row overflow-hidden font-sans text-white">
+      {/* --- LEFT SIDE: LIVING 3D ABSTRACT ORB --- */}
+      <div className="relative w-full md:w-3/5 h-[45vh] md:h-screen bg-black flex flex-col items-center justify-center p-8 sm:p-12 overflow-hidden border-b md:border-b-0 md:border-r border-white/5">
+        
+        {/* Animated Gradient Background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-purple-900/20 via-black to-blue-900/20 pointer-events-none" />
+        
+        {/* THE 3D ORB (Custom CSS/Motion Animation) */}
+        <motion.div 
+          animate={{
+            scale: [1, 1.1, 1],
+            rotate: [0, 90, 180, 270, 360],
+          }}
+          transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+          className="relative w-56 h-56 sm:w-72 sm:h-72 md:w-96 md:h-96"
+        >
+          {/* Layer 1: Core Glow */}
+          <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full blur-[80px] opacity-35 animate-pulse" />
+          
+          {/* Layer 2: Moving Glass Mesh */}
+          <motion.div 
+            animate={{ borderRadius: ["40% 60% 70% 30%", "60% 40% 30% 70%", "40% 60% 70% 30%"] }}
+            transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+            className="absolute inset-0 border border-white/20 bg-white/5 backdrop-blur-3xl shadow-2xl shadow-purple-500/20"
+          />
+          
+          {/* Layer 3: Particle Accents */}
+          <div className="absolute top-1/4 left-1/4 w-4 h-4 bg-white rounded-full blur-md opacity-60 shadow-[0_0_20px_white]" />
+        </motion.div>
+
+        {/* LOGO & TAGLINE ON LEFT */}
+        <div className="relative z-10 text-center mt-8 md:mt-12">
+          <motion.div 
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            className="flex items-center justify-center gap-3 mb-4"
+          >
+            <ShieldCheck className="text-purple-400" size={36} />
+            <h1 className="text-3xl md:text-5xl font-bold tracking-tighter">Kitna Kharcha 2.0</h1>
+          </motion.div>
+          <p className="text-zinc-400 max-w-sm mx-auto leading-relaxed font-light text-xs md:text-sm">
+             Encryption-grade security for your financial soul. <br/>
+             <span className="text-white/40 italic font-mono text-[10px] uppercase tracking-widest mt-2 block">
+               Powered by Privacy-First LLM Engine
+             </span>
+          </p>
+        </div>
+
+        {/* Dynamic Grid Background Element */}
+        <div 
+           style={{ backgroundImage: 'linear-gradient(#ffffff 1px, transparent 1px), linear-gradient(90deg, #ffffff 1px, transparent 1px)' }} 
+           className="absolute bottom-0 w-full h-1/2 opacity-[0.05] bg-[size:40px_40px] [mask-image:linear-gradient(to_top,black,transparent)] pointer-events-none"
+        />
+      </div>
+
+      {/* --- RIGHT SIDE: HIGH-END GLASS LOGIN CARD --- */}
+      <div className="w-full md:w-2/5 flex items-center justify-center p-6 sm:p-10 bg-zinc-950 min-h-[55vh] md:min-h-screen pt-16 md:pt-10">
+        <motion.div 
+          initial={{ x: 50, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          transition={{ duration: 0.5 }}
+          className="w-full max-w-md"
+        >
+          {/* WELCOME MESSAGE */}
+          <div className="mb-8 md:mb-10 text-left">
+            <h2 className="text-2xl sm:text-3xl font-bold mb-2">Access Vault</h2>
+            <p className="text-zinc-500 text-xs sm:text-sm">Provide biometrics or manual credentials.</p>
+          </div>
+
+          {/* INPUT FORM */}
+          <form onSubmit={handleUnseal} className="space-y-5">
+            <div className="relative">
+              <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest ml-1 mb-2 block">
+                System Identifier
+              </label>
+              <div className="group relative">
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within:text-purple-400 transition-colors" size={18} />
+                <input 
+                  type="email" 
+                  value={email}
+                  placeholder="name@example.com"
+                  className="w-full bg-zinc-900 border border-white/5 rounded-2xl py-3.5 pl-12 pr-4 outline-none focus:border-purple-500/50 focus:ring-4 focus:ring-purple-500/10 transition-all text-sm text-white placeholder-zinc-600"
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="relative">
+              <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest ml-1 mb-2 block">
+                Access Key
+              </label>
+              <div className="group relative">
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within:text-purple-400 transition-colors" size={18} />
+                <input 
+                  type="password" 
+                  value={password}
+                  placeholder="••••••••"
+                  className="w-full bg-zinc-900 border border-white/5 rounded-2xl py-3.5 pl-12 pr-4 outline-none focus:border-purple-500/50 focus:ring-4 focus:ring-purple-500/10 transition-all text-sm text-white placeholder-zinc-600"
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+              </div>
+            </div>
+
+            {/* BUTTONS */}
+            <motion.button 
+              type="submit"
+              disabled={isAuthenticating || authSuccess}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="w-full py-4 rounded-2xl bg-white text-black font-bold flex items-center justify-center gap-2 hover:bg-zinc-200 transition-colors shadow-lg cursor-pointer"
+            >
+              {isAuthenticating ? (
+                <>
+                  <RefreshCw size={18} className="animate-spin" />
+                  <span>Verifying Credentials...</span>
+                </>
+              ) : authSuccess ? (
+                <>
+                  <CheckCircle2 size={18} className="text-emerald-600" />
+                  <span>Vault Unsealed!</span>
+                </>
+              ) : (
+                <>
+                  <span>Unseal Data</span>
+                  <ArrowRight size={18} />
+                </>
+              )}
+            </motion.button>
+
+            <div className="relative flex items-center justify-center py-2">
+              <div className="w-full h-px bg-white/5" />
+              <span className="absolute bg-zinc-950 px-4 text-xs font-bold text-zinc-600 tracking-wider">
+                SECURE CONNECT
+              </span>
+            </div>
+
+            {/* BIOMETRIC SIMULATION */}
+            <div className="grid grid-cols-2 gap-3.5">
+              <button 
+                type="button"
+                onClick={handleBiometric}
+                className="flex items-center justify-center gap-2 py-3 rounded-2xl bg-zinc-900 border border-white/5 hover:bg-zinc-800 transition-colors text-white cursor-pointer"
+              >
+                <Fingerprint size={18} className="text-purple-400" />
+                <span className="text-xs font-bold tracking-tight">Biometrics</span>
+              </button>
+              <button 
+                type="button"
+                onClick={handleBiometric}
+                className="flex items-center justify-center gap-2 py-3 rounded-2xl bg-zinc-900 border border-white/5 hover:bg-zinc-800 transition-colors text-white cursor-pointer"
+              >
+                <Chrome size={18} className="text-blue-400" />
+                <span className="text-xs font-bold tracking-tight">SSO Key</span>
+              </button>
+            </div>
+          </form>
+
+          {/* FOOTER */}
+          <div className="mt-8 md:mt-12 flex items-center justify-between text-[10px] text-zinc-600 uppercase tracking-widest">
+            <span>AES-256 GCM Mode</span>
+            <button
+              onClick={onUnlock}
+              className="text-purple-400 hover:underline font-bold normal-case cursor-pointer"
+            >
+              Direct Dashboard ➔
             </button>
           </div>
         </motion.div>
