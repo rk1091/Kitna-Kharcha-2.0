@@ -28,8 +28,10 @@ import {
 import Interactive3DBackground from './components/Interactive3DBackground.jsx';
 import DecisionInspectorModal from './components/DecisionInspectorModal.jsx';
 import StatementUploadCard from './components/StatementUploadCard.jsx';
+import LoginPage from './Login.jsx';
 
 export default function App() {
+  const [currentView, setCurrentView] = useState('login');
   const [theme, setTheme] = useState('cozy');
   const [privacyMode, setPrivacyMode] = useState(false);
   const [isPaletteOpen, setIsPaletteOpen] = useState(false);
@@ -393,6 +395,32 @@ export default function App() {
     alert(`Created rule in DB: Always map "${txn.name}" to category "${txn.category}" via case-insensitive substring!`);
   };
 
+  if (currentView === 'login') {
+    return (
+      <div className="relative">
+        {/* Quick View Floating Switcher */}
+        <div className="fixed top-4 right-4 z-50 flex items-center gap-1.5 bg-black/70 backdrop-blur-xl border border-white/10 rounded-full p-1.5 text-xs text-white shadow-2xl">
+          <button
+            onClick={() => setCurrentView('login')}
+            className="px-3 py-1.5 rounded-full bg-purple-600 text-white font-semibold flex items-center gap-1.5 shadow-md text-xs cursor-pointer"
+          >
+            <Lock size={13} />
+            <span>Auth Vault</span>
+          </button>
+          <button
+            onClick={() => setCurrentView('dashboard')}
+            className="px-3 py-1.5 rounded-full text-zinc-400 hover:text-white transition-all flex items-center gap-1.5 text-xs cursor-pointer"
+          >
+            <Cpu size={13} />
+            <span>Dashboard</span>
+          </button>
+        </div>
+
+        <LoginPage onLogin={() => setCurrentView('dashboard')} />
+      </div>
+    );
+  }
+
   return (
     <div className={`relative min-h-screen transition-all duration-700 ${s.bg} ${s.font} ${s.card.includes('text-') ? '' : 'text-slate-800'} overflow-hidden`}>
       
@@ -508,6 +536,16 @@ export default function App() {
             title="Toggle Privacy Blur across all numbers"
           >
             {privacyMode ? <EyeOff size={18} className="text-red-500" /> : <Eye size={18} />}
+          </button>
+
+          {/* LOCK VAULT BUTTON */}
+          <button
+            onClick={() => setCurrentView('login')}
+            className={`p-3 sm:px-4 rounded-2xl ${s.card} border flex items-center gap-2 hover:scale-105 transition-all text-xs font-bold uppercase tracking-wider cursor-pointer`}
+            title="Lock Vault & Return to 3D Auth Screen"
+          >
+            <Lock size={16} className={s.accent} />
+            <span className="hidden sm:inline">Lock Vault</span>
           </button>
         </div>
       </nav>
