@@ -1,782 +1,503 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
-  Eye,
   EyeOff,
+  Eye,
   Sparkles,
+  Cat,
+  Gift,
+  Zap,
+  Moon,
+  Sun,
   ShieldCheck,
+  ChevronRight,
   TrendingDown,
   TrendingUp,
-  Wallet,
-  Zap,
-  UploadCloud,
-  Layers,
-  Lock,
-  ArrowUpRight,
-  Filter,
-  CheckCircle2,
-  AlertCircle,
-  HelpCircle,
-  FileText,
-  Sliders,
-  X,
   CreditCard,
-  ChevronRight,
-  Info
+  Clock,
+  ArrowUpRight,
+  Lock,
+  Layers,
+  Heart
 } from 'lucide-react';
 
-const THEMES = [
-  {
-    id: 'stealth',
-    name: 'Midnight Stealth',
-    concept: 'Privacy-First Vault',
-    accentColor: '#a855f7',
-    bgPreview: '#090a0f',
-    fontLabel: 'Inter + JetBrains Mono',
-    badge: 'Cypherpunk'
-  },
-  {
-    id: 'solar',
-    name: 'Solar Intelligence',
-    concept: 'High-Energy Growth',
-    accentColor: '#f97316',
-    bgPreview: '#fbf9f5',
-    fontLabel: 'Plus Jakarta + Space Grotesk',
-    badge: 'Productivity'
-  },
-  {
-    id: 'nordic',
-    name: 'Nordic Frost',
-    concept: 'Anxiety-Free Minimalist',
-    accentColor: '#0284c7',
-    bgPreview: '#f0f4f9',
-    fontLabel: 'Inter Minimal',
-    badge: 'Zen Flow'
-  },
-  {
-    id: 'eco',
-    name: 'Eco Wealth',
-    concept: 'Prosperity & Sustainable Growth',
-    accentColor: '#10b981',
-    bgPreview: '#071911',
-    fontLabel: 'Outfit + JetBrains Mono',
-    badge: 'Wealth'
-  }
-];
-
-const INITIAL_TRANSACTIONS = [
-  {
-    id: 'txn-1',
-    rawDescription: ': RAZ*SwiggyBangalore C',
-    cleanMerchant: 'Swiggy',
-    category: 'Food & Dining',
-    categoryColor: 'bg-orange-500/10 text-orange-500 border-orange-500/20',
-    amount: -450.00,
-    date: 'Today, 2:15 PM',
-    account: 'HDFC •••• 4892',
-    tier: 'Tier 1: Regex Match',
-    tierNum: 1,
-    confidence: '100%',
-    engineNote: 'Matched local keyword substring "swiggy" directly. Zero tokens, 0ms latency.',
-    maskedPII: 'RAZ*SWIGGY••••••••'
-  },
-  {
-    id: 'txn-2',
-    rawDescription: '00: EMINYKAA VIA SMARTBUYMUMBRA C',
-    cleanMerchant: 'Nykaa',
-    category: 'Shopping & Care',
-    categoryColor: 'bg-pink-500/10 text-pink-500 border-pink-500/20',
-    amount: -3299.00,
-    date: 'Yesterday, 8:40 PM',
-    account: 'SBI •••• 1044',
-    tier: 'Tier 3: LLM Refined',
-    tierNum: 3,
-    confidence: '98%',
-    engineNote: 'Processed via Gemini Structured Classifier. Stripped gateway noise and detected e-commerce cosmetics subcategory.',
-    maskedPII: 'EMINYKAA••••••••'
-  },
-  {
-    id: 'txn-3',
-    rawDescription: 'WWW DINEOUT CO INGURGAON C',
-    cleanMerchant: 'Dineout',
-    category: 'Food & Dining',
-    categoryColor: 'bg-orange-500/10 text-orange-500 border-orange-500/20',
-    amount: -1840.00,
-    date: '23 Sep, 9:15 PM',
-    account: 'ICICI •••• 9921',
-    tier: 'Tier 1: Regex Match',
-    tierNum: 1,
-    confidence: '100%',
-    engineNote: 'Domain wrapper stripped (WWW ... CO IN) and matched "dineout" rule.',
-    maskedPII: 'DINEOUT••••••••'
-  },
-  {
-    id: 'txn-4',
-    rawDescription: 'IGL*INDRAPRASTHA GAS LTD NEW DELHI',
-    cleanMerchant: 'Indraprastha Gas',
-    category: 'Utilities & Bills',
-    categoryColor: 'bg-cyan-500/10 text-cyan-500 border-cyan-500/20',
-    amount: -820.00,
-    date: '21 Sep, 11:10 AM',
-    account: 'HDFC •••• 4892',
-    tier: 'Tier 2: Pattern Sync',
-    tierNum: 2,
-    confidence: '94%',
-    engineNote: 'Matched recurring utility bill pattern and utility MCC code.',
-    maskedPII: 'IGL*••••••••'
-  },
-  {
-    id: 'txn-5',
-    rawDescription: 'SALARY CREDIT ACME TECH CORP NEFT',
-    cleanMerchant: 'Acme Tech Corp',
-    category: 'Income',
-    categoryColor: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20',
-    amount: 145000.00,
-    date: '01 Sep, 10:00 AM',
-    account: 'HDFC •••• 4892',
-    tier: 'Tier 1: Regex Match',
-    tierNum: 1,
-    confidence: '100%',
-    engineNote: 'Identified corporate salary NEFT credit pattern.',
-    maskedPII: 'ACME TECH••••••••'
-  },
-  {
-    id: 'txn-6',
-    rawDescription: 'AMZN PRIME VIDEO IN MUMBAI VIA UPI',
-    cleanMerchant: 'Amazon Prime',
-    category: 'Entertainment',
-    categoryColor: 'bg-purple-500/10 text-purple-500 border-purple-500/20',
-    amount: -299.00,
-    date: '19 Sep, 4:20 PM',
-    account: 'HDFC •••• 4892',
-    tier: 'Tier 3: LLM Refined',
-    tierNum: 3,
-    confidence: '99%',
-    engineNote: 'Disambiguated Amazon retail vs Prime subscription stream based on recurring billing interval.',
-    maskedPII: 'AMZN PRIME••••••••'
-  }
-];
-
-export default function App() {
-  const [theme, setTheme] = useState('stealth');
+const App = () => {
+  const [theme, setTheme] = useState('cozy'); // cozy, cat, stealth, paper
   const [privacyMode, setPrivacyMode] = useState(false);
-  const [maskMerchantPII, setMaskMerchantPII] = useState(false);
-  const [filterTier, setFilterTier] = useState('all');
-  const [selectedTxn, setSelectedTxn] = useState(null);
-  const [isUploading, setIsUploading] = useState(false);
-  const [appliedStrategy, setAppliedStrategy] = useState(false);
+  const [activeTab, setActiveTab] = useState('all');
 
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-  }, [theme]);
-
-  const activeThemeMeta = THEMES.find((t) => t.id === theme) || THEMES[0];
-
-  const filteredTransactions = INITIAL_TRANSACTIONS.filter((t) => {
-    if (filterTier === 'all') return true;
-    if (filterTier === 'tier1') return t.tierNum === 1;
-    if (filterTier === 'tier2') return t.tierNum === 2;
-    if (filterTier === 'tier3') return t.tierNum === 3;
-    return true;
-  });
-
-  const handleSimulateUpload = () => {
-    setIsUploading(true);
-    setTimeout(() => {
-      setIsUploading(false);
-    }, 2400);
+  // THEME CONFIGURATION
+  const themeStyles = {
+    cozy: {
+      id: 'cozy',
+      name: 'Cozy Hearth',
+      tagline: 'Warmth, holiday spirit & mindful living',
+      bg: 'bg-[#F5F2ED]', // Warm Beige
+      text: 'text-[#2D2424]',
+      card: 'bg-white/75 backdrop-blur-md border-[#E3D9C6] shadow-[0_8px_30px_rgb(217,206,178,0.25)]',
+      cardHover: 'hover:border-[#800000]/30',
+      accent: 'text-[#800000]', // Maroon
+      button: 'bg-[#800000] text-[#FFF9F5] shadow-lg shadow-[#800000]/20',
+      buttonHover: 'hover:bg-[#680000]',
+      badge: 'bg-[#800000]/10 text-[#800000] border-[#800000]/20',
+      font: 'font-outfit',
+      heading: 'font-playfair italic',
+      mono: 'font-mono',
+      icon: <Gift className="text-[#800000]" size={18} />
+    },
+    cat: {
+      id: 'cat',
+      name: 'Neko Kawaii',
+      tagline: 'Cute, pastel lavender & paw-sitive vibes',
+      bg: 'bg-[#F3ECFF]', // Soft Lavender
+      text: 'text-[#362557]',
+      card: 'bg-white/85 backdrop-blur-xl border-[#DAC8FF] shadow-[0_8px_30px_rgb(209,187,255,0.3)]',
+      cardHover: 'hover:border-[#6B46C1]/40',
+      accent: 'text-[#6B46C1]',
+      button: 'bg-[#6B46C1] text-white shadow-lg shadow-[#6B46C1]/25',
+      buttonHover: 'hover:bg-[#5835A8]',
+      badge: 'bg-[#6B46C1]/10 text-[#6B46C1] border-[#6B46C1]/25',
+      font: 'font-quicksand',
+      heading: 'font-quicksand font-bold',
+      mono: 'font-quicksand font-semibold',
+      icon: <Cat className="text-[#6B46C1]" size={18} />
+    },
+    stealth: {
+      id: 'stealth',
+      name: 'Midnight Stealth',
+      tagline: 'Encrypted cypherpunk vault',
+      bg: 'bg-[#050505]',
+      text: 'text-zinc-200',
+      card: 'bg-[#101012]/90 backdrop-blur-md border-white/10 shadow-[0_8px_30px_rgb(0,0,0,0.6)]',
+      cardHover: 'hover:border-[#00FF94]/40',
+      accent: 'text-[#00FF94]',
+      button: 'bg-[#00FF94] text-black font-bold shadow-lg shadow-[#00FF94]/25',
+      buttonHover: 'hover:bg-[#00dd80]',
+      badge: 'bg-[#00FF94]/10 text-[#00FF94] border-[#00FF94]/30',
+      font: 'font-mono',
+      heading: 'font-mono font-bold tracking-tight',
+      mono: 'font-mono',
+      icon: <Zap className="text-[#00FF94]" size={18} />
+    },
+    paper: {
+      id: 'paper',
+      name: 'Modern Paper',
+      tagline: 'High-contrast editorial minimalism',
+      bg: 'bg-[#F9FAFB]',
+      text: 'text-zinc-900',
+      card: 'bg-white border-zinc-200 shadow-[0_4px_20px_rgb(0,0,0,0.04)]',
+      cardHover: 'hover:border-zinc-400',
+      accent: 'text-blue-600',
+      button: 'bg-zinc-900 text-white shadow-md shadow-zinc-900/10',
+      buttonHover: 'hover:bg-zinc-800',
+      badge: 'bg-blue-50 text-blue-700 border-blue-200',
+      font: 'font-inter',
+      heading: 'font-inter font-black tracking-tight',
+      mono: 'font-mono',
+      icon: <Sun className="text-zinc-800" size={18} />
+    }
   };
 
+  const s = themeStyles[theme];
+
+  const transactions = [
+    {
+      id: 1,
+      name: 'Apple Services',
+      subtitle: 'iCloud+ 2TB & Apple One',
+      cat: 'Subscriptions',
+      price: '₹199.00',
+      tier: 'Tier 1: Regex Match',
+      tierShort: 'Tier 1',
+      date: 'Today, 4:12 PM',
+      isDebit: true
+    },
+    {
+      id: 2,
+      name: 'Zomato Limited',
+      subtitle: 'Artisan Sourdough & Cold Brew',
+      cat: 'Dining Out',
+      price: '₹840.00',
+      tier: 'Tier 3: LLM Refined',
+      tierShort: 'Tier 3',
+      date: 'Yesterday, 8:40 PM',
+      isDebit: true
+    },
+    {
+      id: 3,
+      name: 'Shell Petrol Station',
+      subtitle: 'V-Power High Octane Fuel',
+      cat: 'Automotive',
+      price: '₹3,200.00',
+      tier: 'Tier 2: Pattern Sync',
+      tierShort: 'Tier 2',
+      date: '23 Sep, 11:15 AM',
+      isDebit: true
+    },
+    {
+      id: 4,
+      name: 'Starbucks Coffee',
+      subtitle: 'Caramel Macchiato x 2',
+      cat: 'Cafes',
+      price: '₹680.00',
+      tier: 'Tier 1: Regex Match',
+      tierShort: 'Tier 1',
+      date: '22 Sep, 3:30 PM',
+      isDebit: true
+    },
+    {
+      id: 5,
+      name: 'Client Retainer Payout',
+      subtitle: 'Design Consulting (Wireframe Sync)',
+      cat: 'Income',
+      price: '₹65,000.00',
+      tier: 'Tier 1: Direct Credit',
+      tierShort: 'Credit',
+      date: '20 Sep, 10:00 AM',
+      isDebit: false
+    }
+  ];
+
   return (
-    <div className="min-h-screen text-theme-text-base pb-16 selection:bg-theme-primary/30">
-      {/* Top Notification / Security Bar */}
-      <div className="border-b border-theme-border bg-theme-surface/70 backdrop-blur-md px-6 py-2 text-xs flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span className="font-medium text-theme-text-muted">
-            Zero-Cloud Vault Active • Hardware-Encrypted Local Session
-          </span>
-          <span className="hidden sm:inline text-theme-text-muted/60">•</span>
-          <span className="hidden sm:inline font-num text-theme-text-muted/80">AES-256 GCM</span>
-        </div>
-        <div className="flex items-center gap-4 text-theme-text-muted">
-          <div className="flex items-center gap-1.5">
-            <ShieldCheck size={14} className="text-emerald-500" />
-            <span>Privacy Score: <strong className="text-emerald-500 font-num">98% Optimal</strong></span>
+    <div
+      className={`min-h-screen transition-all duration-700 ${s.bg} ${s.font} ${s.text} p-4 sm:p-6 md:p-10 relative overflow-x-hidden`}
+    >
+      {/* Dynamic Background Watermarks */}
+      {theme === 'cat' && (
+        <Cat
+          className="fixed -right-16 -bottom-16 opacity-5 pointer-events-none text-[#6B46C1] rotate-12 transition-all duration-700"
+          size={460}
+        />
+      )}
+      {theme === 'cozy' && (
+        <div className="fixed inset-0 pointer-events-none opacity-40 bg-[radial-gradient(#800000_0.75px,transparent_1px)] [background-size:24px_24px]" />
+      )}
+      {theme === 'stealth' && (
+        <div className="fixed inset-0 pointer-events-none opacity-20 bg-[linear-gradient(to_right,#1f293715_1px,transparent_1px),linear-gradient(to_bottom,#1f293715_1px,transparent_1px)] [background-size:32px_32px]" />
+      )}
+
+      {/* TOP NAVIGATION BAR */}
+      <nav className="max-w-6xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4 mb-8 sm:mb-12">
+        <div className="flex items-center gap-3">
+          <div
+            className={`p-2.5 rounded-2xl ${s.button} transition-transform duration-300 hover:scale-105`}
+          >
+            <ShieldCheck size={24} />
           </div>
-          <span className="hidden md:inline">•</span>
-          <span className="hidden md:inline">Mumbai Node (Localhost)</span>
-        </div>
-      </div>
-
-      {/* Main Header */}
-      <header className="px-6 py-5 border-b border-theme-border bg-theme-surface/40 backdrop-blur-lg sticky top-0 z-30">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
-          {/* Logo & Tagline */}
-          <div className="flex items-center gap-3.5">
-            <div
-              className="w-11 h-11 rounded-2xl flex items-center justify-center shadow-lg transition-transform duration-300 hover:scale-105"
-              style={{ backgroundColor: activeThemeMeta.accentColor }}
-            >
-              <Lock size={22} className="text-white drop-shadow-sm" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-bold tracking-tight">Kitna Kharcha 2.0</h1>
-                <span className="text-[11px] font-semibold tracking-wider uppercase px-2 py-0.5 rounded-full border border-theme-border bg-theme-surface font-num">
-                  v2.4 Tiered AI
-                </span>
-              </div>
-              <p className="text-xs text-theme-text-muted mt-0.5">
-                Privacy-First Financial Intelligence • Local OCR & Substring Normalization
-              </p>
-            </div>
-          </div>
-
-          {/* Action Center: Dynamic Theme Switcher & Privacy Toggle */}
-          <div className="flex flex-wrap items-center gap-3">
-            {/* Theme Selector Pill */}
-            <div className="flex items-center gap-1 p-1 rounded-2xl border border-theme-border bg-theme-surface shadow-inner">
-              {THEMES.map((t) => {
-                const isActive = theme === t.id;
-                return (
-                  <button
-                    key={t.id}
-                    onClick={() => setTheme(t.id)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all duration-200 ${
-                      isActive
-                        ? 'bg-theme-surface-hover text-theme-text-base shadow-sm ring-1 ring-theme-border'
-                        : 'text-theme-text-muted hover:text-theme-text-base'
-                    }`}
-                    title={`${t.name}: ${t.concept} (${t.fontLabel})`}
-                  >
-                    <span
-                      className="w-3 h-3 rounded-full transition-transform"
-                      style={{
-                        backgroundColor: t.accentColor,
-                        boxShadow: isActive ? `0 0 8px ${t.accentColor}` : 'none',
-                        transform: isActive ? 'scale(1.15)' : 'scale(1)'
-                      }}
-                    />
-                    <span className="hidden sm:inline">{t.name.split(' ')[0]}</span>
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Incognito / Privacy Blur Toggle */}
-            <button
-              onClick={() => setPrivacyMode(!privacyMode)}
-              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold border transition-all duration-300 shadow-sm ${
-                privacyMode
-                  ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/25 ring-2 ring-emerald-500/20'
-                  : 'bg-theme-surface border-theme-border text-theme-text-muted hover:text-theme-text-base hover:bg-theme-surface-hover'
+          <div>
+            <h1
+              className={`text-2xl sm:text-3xl tracking-tight leading-tight ${s.heading} ${
+                theme === 'stealth' ? 'text-white' : ''
               }`}
             >
-              {privacyMode ? (
-                <>
-                  <EyeOff size={16} className="text-emerald-500 animate-pulse" />
-                  <span>Incognito Blur: ON</span>
-                </>
-              ) : (
-                <>
-                  <Eye size={16} />
-                  <span>Incognito Mode</span>
-                </>
-              )}
-            </button>
+              Kitna Kharcha <span className="opacity-40 text-sm font-sans font-semibold">2.0</span>
+            </h1>
+            <p className="text-xs opacity-60 font-sans tracking-wide">
+              {s.tagline}
+            </p>
           </div>
         </div>
-      </header>
 
-      {/* Main Container */}
-      <main className="max-w-7xl mx-auto px-6 pt-8 space-y-8">
-        {/* Theme Showcase Banner */}
-        <section className="p-4 rounded-2xl border border-theme-border bg-theme-surface/50 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div
-              className="p-2.5 rounded-xl"
-              style={{ backgroundColor: activeThemeMeta.accentColor + '20', color: activeThemeMeta.accentColor }}
-            >
-              <Sliders size={20} />
+        {/* Dynamic Boutique Theme Switcher & Privacy Toggle */}
+        <div className="flex items-center gap-2 sm:gap-3 bg-white/60 dark:bg-zinc-900/60 p-1.5 sm:p-2 rounded-2xl border border-white/40 dark:border-white/10 shadow-sm backdrop-blur-xl">
+          <ThemeBtn
+            label="Cozy"
+            icon={<Gift size={18} />}
+            active={theme === 'cozy'}
+            onClick={() => setTheme('cozy')}
+            color="bg-[#800000]"
+          />
+          <ThemeBtn
+            label="Neko"
+            icon={<Cat size={18} />}
+            active={theme === 'cat'}
+            onClick={() => setTheme('cat')}
+            color="bg-[#6B46C1]"
+          />
+          <ThemeBtn
+            label="Stealth"
+            icon={<Moon size={18} />}
+            active={theme === 'stealth'}
+            onClick={() => setTheme('stealth')}
+            color="bg-[#00FF94] !text-black"
+          />
+          <ThemeBtn
+            label="Paper"
+            icon={<Sun size={18} />}
+            active={theme === 'paper'}
+            onClick={() => setTheme('paper')}
+            color="bg-zinc-900 text-white"
+          />
+
+          <div className="w-[1px] h-6 bg-zinc-300 dark:bg-zinc-700 mx-1" />
+
+          {/* Privacy Toggle Button */}
+          <button
+            onClick={() => setPrivacyMode(!privacyMode)}
+            className={`p-2 rounded-xl transition-all duration-300 flex items-center gap-1.5 text-xs font-semibold ${
+              privacyMode
+                ? 'bg-rose-500/15 text-rose-500 ring-1 ring-rose-500/30'
+                : 'hover:bg-black/5 dark:hover:bg-white/5 opacity-70 hover:opacity-100'
+            }`}
+            title="Toggle Privacy Blur for all sensitive financial figures"
+          >
+            {privacyMode ? <EyeOff size={18} /> : <Eye size={18} />}
+            <span className="hidden sm:inline">
+              {privacyMode ? 'Blurred' : 'Mask'}
+            </span>
+          </button>
+        </div>
+      </nav>
+
+      {/* BENTO GRID MAIN LAYOUT */}
+      <main className="max-w-6xl mx-auto grid grid-cols-12 gap-6 items-stretch">
+        
+        {/* 1. BIG HERO OUTFLOW STAT CARD */}
+        <div
+          className={`col-span-12 lg:col-span-8 ${s.card} ${s.cardHover} border p-7 sm:p-9 rounded-[2rem] relative overflow-hidden transition-all duration-300 flex flex-col justify-between`}
+        >
+          {theme === 'cat' && (
+            <Cat
+              className="absolute -right-6 -bottom-6 opacity-[0.06] rotate-12 pointer-events-none text-[#6B46C1]"
+              size={240}
+            />
+          )}
+
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <span className="uppercase tracking-[0.2em] text-xs font-bold opacity-60">
+                Total Monthly Outflow
+              </span>
+              <span
+                className={`text-xs px-3 py-1 rounded-full border ${s.badge} flex items-center gap-1 font-semibold`}
+              >
+                <Sparkles size={13} />
+                September Active
+              </span>
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-semibold">{activeThemeMeta.name}</span>
-                <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-md bg-theme-primary/10 text-theme-primary border border-theme-primary/20">
-                  {activeThemeMeta.badge}
-                </span>
-              </div>
-              <p className="text-xs text-theme-text-muted">
-                {activeThemeMeta.concept} • Typography: <span className="font-medium text-theme-text-base">{activeThemeMeta.fontLabel}</span>
-              </p>
+
+            {/* Main Numeric Amount */}
+            <div className="my-3">
+              <h2
+                className={`text-4xl sm:text-6xl md:text-7xl font-bold tracking-tight transition-all duration-300 cursor-pointer ${
+                  s.mono
+                } ${privacyMode ? 'filter blur-xl hover:blur-none select-none' : ''} ${
+                  theme === 'stealth' ? 'text-white' : ''
+                }`}
+                title={privacyMode ? 'Hover to reveal' : ''}
+              >
+                ₹84,200<span className="text-2xl sm:text-4xl opacity-50">.00</span>
+              </h2>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 text-xs">
-            <label className="flex items-center gap-2 cursor-pointer select-none bg-theme-card px-3 py-1.5 rounded-lg border border-theme-border hover:bg-theme-surface-hover">
-              <input
-                type="checkbox"
-                checked={maskMerchantPII}
-                onChange={(e) => setMaskMerchantPII(e.target.checked)}
-                className="rounded accent-theme-primary"
-              />
-              <span className="text-theme-text-muted">Mask Merchant PII</span>
-            </label>
-            <span className="text-theme-text-muted text-[11px] hidden sm:inline">
-              (Hover blurred figures to reveal)
+          <div className="flex flex-wrap items-center gap-3 pt-6 border-t border-black/5 dark:border-white/5">
+            <span className="flex items-center gap-1.5 text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 px-3.5 py-1.5 rounded-full">
+              <Sparkles size={14} /> AI Optimized: -14% vs Aug
+            </span>
+            <span className="text-xs opacity-60 flex items-center gap-1">
+              <Clock size={14} /> Next major bill in 4 days (HDFC Credit Card)
             </span>
           </div>
-        </section>
+        </div>
 
-        {/* Financial Stat Cards */}
-        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          {/* Total Spent */}
-          <div className="p-5 rounded-2xl border border-theme-border bg-theme-card shadow-sm relative overflow-hidden group hover:border-theme-primary/40 transition-all">
-            <div className="flex items-center justify-between text-xs text-theme-text-muted mb-2">
-              <span className="font-medium">Total Monthly Spend</span>
-              <span className="flex items-center gap-0.5 text-emerald-500 font-semibold bg-emerald-500/10 px-2 py-0.5 rounded-full font-num">
-                <TrendingDown size={13} /> -12%
-              </span>
-            </div>
-            <div className={`text-2xl lg:text-3xl font-bold font-num tracking-tight ${privacyMode ? 'privacy-blur' : ''}`}>
-              ₹42,850.00
-            </div>
-            <div className="mt-3 flex items-center justify-between text-[11px] text-theme-text-muted">
-              <span>vs ₹48,690 last month</span>
-              <span className="text-theme-primary font-medium">Safe Budget</span>
-            </div>
-            <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-theme-primary/30 to-transparent" />
+        {/* 2. AI INSIGHT BENTO CARD */}
+        <div
+          className={`col-span-12 lg:col-span-4 ${s.button} p-7 sm:p-9 rounded-[2rem] shadow-xl flex flex-col justify-between transition-all duration-300 relative overflow-hidden group`}
+        >
+          <div className="flex items-center justify-between">
+            <Sparkles size={32} className="opacity-90 transition-transform duration-300 group-hover:scale-110" />
+            <span className="text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full bg-white/20 dark:bg-black/20">
+              Copilot Signal
+            </span>
           </div>
 
-          {/* AI Savings */}
-          <div className="p-5 rounded-2xl border border-theme-border bg-theme-card shadow-sm relative overflow-hidden group hover:border-theme-primary/40 transition-all">
-            <div className="flex items-center justify-between text-xs text-theme-text-muted mb-2">
-              <span className="font-medium">AI Insights Savings</span>
-              <span className="flex items-center gap-0.5 text-emerald-500 font-semibold bg-emerald-500/10 px-2 py-0.5 rounded-full font-num">
-                <TrendingUp size={13} /> +₹4,200
-              </span>
-            </div>
-            <div className={`text-2xl lg:text-3xl font-bold font-num tracking-tight text-emerald-500 ${privacyMode ? 'privacy-blur' : ''}`}>
-              ₹4,200.00
-            </div>
-            <div className="mt-3 flex items-center justify-between text-[11px] text-theme-text-muted">
-              <span>Via recurring audit</span>
-              <span className="text-emerald-500 font-medium">3 Subscriptions Optimized</span>
-            </div>
-            <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500/40 to-transparent" />
+          <div className="my-6">
+            <h3 className="text-xl sm:text-2xl font-bold mb-3 leading-snug">
+              Your coffee habit is now a "Small Business"
+            </h3>
+            <p className="text-sm opacity-90 leading-relaxed font-sans">
+              You've spent <strong className="underline underline-offset-2">₹4,500</strong> at Starbucks & Blue Tokai this month. That's a 15% increase from last month.
+            </p>
           </div>
 
-          {/* Privacy Score */}
-          <div className="p-5 rounded-2xl border border-theme-border bg-theme-card shadow-sm relative overflow-hidden group hover:border-theme-primary/40 transition-all">
-            <div className="flex items-center justify-between text-xs text-theme-text-muted mb-2">
-              <span className="font-medium">Zero-Cloud Privacy Vault</span>
-              <span className="text-emerald-500 font-semibold bg-emerald-500/10 px-2 py-0.5 rounded-full font-num">
-                Optimal
-              </span>
-            </div>
-            <div className="text-2xl lg:text-3xl font-bold font-num tracking-tight flex items-baseline gap-2">
-              <span>98%</span>
-              <span className="text-xs font-normal text-theme-text-muted">Leak Proof</span>
-            </div>
-            <div className="mt-3 flex items-center justify-between text-[11px] text-theme-text-muted">
-              <span>0% Cloud egress</span>
-              <span className="text-emerald-500 font-medium">Hardware Encrypted</span>
-            </div>
-            <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-cyan-500/40 to-transparent" />
-          </div>
+          <button
+            onClick={() => alert("Activated: Weekly ₹1,000 Cafe Soft Limit strategy")}
+            className="w-full py-2.5 px-4 rounded-xl bg-white/20 hover:bg-white/30 text-xs font-bold transition-all flex items-center justify-center gap-1.5 backdrop-blur-md"
+          >
+            <span>Set Weekly Cafe Cap</span>
+            <ArrowUpRight size={15} />
+          </button>
+        </div>
 
-          {/* Net Liquidity */}
-          <div className="p-5 rounded-2xl border border-theme-border bg-theme-card shadow-sm relative overflow-hidden group hover:border-theme-primary/40 transition-all">
-            <div className="flex items-center justify-between text-xs text-theme-text-muted mb-2">
-              <span className="font-medium">Net Liquid Position</span>
-              <span className="text-theme-primary font-semibold bg-theme-primary/10 px-2 py-0.5 rounded-full font-num">
-                2 Bank Accounts
-              </span>
-            </div>
-            <div className={`text-2xl lg:text-3xl font-bold font-num tracking-tight ${privacyMode ? 'privacy-blur' : ''}`}>
-              ₹2,18,430.00
-            </div>
-            <div className="mt-3 flex items-center justify-between text-[11px] text-theme-text-muted">
-              <span>HDFC & SBI Connected</span>
-              <span className="text-theme-text-base font-medium">EOM On Track</span>
-            </div>
-            <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-purple-500/40 to-transparent" />
-          </div>
-        </section>
-
-        {/* 2-Column Core Architecture: Transactions + AI Insight / Upload */}
-        <section className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          {/* Left Column (8 cols): Tiered AI Transaction Intelligence Feed */}
-          <div className="lg:col-span-8 space-y-4">
-            <div className="p-6 rounded-3xl border border-theme-border bg-theme-card shadow-sm space-y-5">
-              {/* Card Header & Filter Tabs */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-theme-border">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <Layers size={18} className="text-theme-primary" />
-                    <h2 className="text-lg font-bold">Tiered AI Transaction Feed</h2>
-                  </div>
-                  <p className="text-xs text-theme-text-muted mt-0.5">
-                    Multi-stage pipeline: Tier 1 (Regex & Substrings) $\rightarrow$ Tier 2 (Patterns) $\rightarrow$ Tier 3 (LLM)
-                  </p>
-                </div>
-
-                {/* Filter Badges */}
-                <div className="flex items-center gap-1 bg-theme-surface p-1 rounded-xl border border-theme-border text-xs">
-                  <button
-                    onClick={() => setFilterTier('all')}
-                    className={`px-2.5 py-1 rounded-lg transition-colors ${
-                      filterTier === 'all'
-                        ? 'bg-theme-surface-hover text-theme-text-base font-semibold shadow-sm'
-                        : 'text-theme-text-muted hover:text-theme-text-base'
-                    }`}
-                  >
-                    All ({INITIAL_TRANSACTIONS.length})
-                  </button>
-                  <button
-                    onClick={() => setFilterTier('tier1')}
-                    className={`px-2.5 py-1 rounded-lg transition-colors ${
-                      filterTier === 'tier1'
-                        ? 'bg-theme-surface-hover text-theme-text-base font-semibold shadow-sm'
-                        : 'text-theme-text-muted hover:text-theme-text-base'
-                    }`}
-                  >
-                    Tier 1 (Regex)
-                  </button>
-                  <button
-                    onClick={() => setFilterTier('tier2')}
-                    className={`px-2.5 py-1 rounded-lg transition-colors ${
-                      filterTier === 'tier2'
-                        ? 'bg-theme-surface-hover text-theme-text-base font-semibold shadow-sm'
-                        : 'text-theme-text-muted hover:text-theme-text-base'
-                    }`}
-                  >
-                    Tier 2 (ML)
-                  </button>
-                  <button
-                    onClick={() => setFilterTier('tier3')}
-                    className={`px-2.5 py-1 rounded-lg transition-colors ${
-                      filterTier === 'tier3'
-                        ? 'bg-theme-surface-hover text-theme-text-base font-semibold shadow-sm'
-                        : 'text-theme-text-muted hover:text-theme-text-base'
-                    }`}
-                  >
-                    Tier 3 (LLM)
-                  </button>
-                </div>
-              </div>
-
-              {/* Transactions List */}
-              <div className="space-y-3">
-                {filteredTransactions.map((txn) => {
-                  const isDebit = txn.amount < 0;
-                  return (
-                    <div
-                      key={txn.id}
-                      onClick={() => setSelectedTxn(txn)}
-                      className="group p-4 rounded-2xl border border-theme-border bg-theme-surface/60 hover:bg-theme-surface-hover transition-all duration-200 cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:border-theme-primary/30"
-                    >
-                      {/* Left side: Merchant & Raw info */}
-                      <div className="flex items-start gap-3.5">
-                        <div
-                          className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm shrink-0 border border-theme-border bg-theme-card font-num`}
-                        >
-                          {txn.cleanMerchant.charAt(0)}
-                        </div>
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-semibold text-sm">
-                              {maskMerchantPII ? txn.maskedPII : txn.cleanMerchant}
-                            </span>
-                            <span
-                              className={`text-[11px] font-medium px-2 py-0.5 rounded-md border ${txn.categoryColor}`}
-                            >
-                              {txn.category}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2 text-xs text-theme-text-muted font-num">
-                            <span>{txn.date}</span>
-                            <span>•</span>
-                            <span>{txn.account}</span>
-                          </div>
-                          <div className="text-[11px] text-theme-text-muted/70 font-mono truncate max-w-xs sm:max-w-md">
-                            raw: {txn.rawDescription}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Right side: Amount & Tier Badge */}
-                      <div className="flex sm:flex-col items-end justify-between sm:justify-center gap-1.5 shrink-0">
-                        <div
-                          className={`font-num font-bold text-base sm:text-right ${
-                            isDebit ? 'text-theme-text-base' : 'text-emerald-500'
-                          } ${privacyMode ? 'privacy-blur' : ''}`}
-                          title={privacyMode ? 'Hover to reveal' : undefined}
-                        >
-                          {isDebit ? `-₹${Math.abs(txn.amount).toLocaleString('en-IN')}` : `+₹${txn.amount.toLocaleString('en-IN')}`}
-                        </div>
-
-                        {/* Tier Badge Visual Representation */}
-                        {txn.tierNum === 1 && (
-                          <span className="text-[10px] font-medium px-2.5 py-0.5 rounded-full border border-theme-border bg-theme-card text-theme-text-muted">
-                            {txn.tier}
-                          </span>
-                        )}
-
-                        {txn.tierNum === 2 && (
-                          <span className="text-[10px] font-medium px-2.5 py-0.5 rounded-full border border-cyan-500/30 bg-cyan-500/10 text-cyan-400 font-num">
-                            {txn.tier} • {txn.confidence}
-                          </span>
-                        )}
-
-                        {txn.tierNum === 3 && (
-                          <span className="text-[10px] font-semibold px-2.5 py-0.5 rounded-full shimmer-badge border border-purple-500/40 text-purple-200 flex items-center gap-1">
-                            <Sparkles size={11} className="text-pink-300" />
-                            {txn.tier}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Bottom helper */}
-              <div className="pt-2 flex items-center justify-between text-xs text-theme-text-muted">
-                <span className="flex items-center gap-1">
-                  <Info size={13} />
-                  Click any transaction to inspect how the Tiered AI Engine made its decision.
-                </span>
-                <span className="font-num text-theme-primary font-medium hover:underline cursor-pointer">
-                  Export Audit Log
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Right Column (4 cols): AI Insight Panel + Local Statement Upload */}
-          <div className="lg:col-span-4 space-y-6">
-            {/* AI Insight Box */}
-            <div className="p-6 rounded-3xl border border-theme-border bg-gradient-to-br from-theme-card to-theme-surface shadow-sm relative overflow-hidden">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="p-1.5 rounded-lg bg-theme-primary/20 text-theme-primary">
-                  <Sparkles size={18} />
-                </div>
-                <span className="text-xs font-bold uppercase tracking-wider text-theme-primary">
-                  Copilot Financial Insight
-                </span>
-              </div>
-
-              <h3 className="text-base font-semibold leading-snug">
-                Weekend Dining Out Anomaly
+        {/* 3. RECENT INTELLIGENCE TRANSACTION LIST */}
+        <div
+          className={`col-span-12 lg:col-span-7 ${s.card} ${s.cardHover} border p-6 sm:p-8 rounded-[2rem] transition-all duration-300`}
+        >
+          <div className="flex justify-between items-center mb-6">
+            <div>
+              <h3
+                className={`text-xl sm:text-2xl ${s.heading} ${
+                  theme === 'stealth' ? 'text-white' : ''
+                }`}
+              >
+                Recent Intelligence
               </h3>
-              <p className="text-xs text-theme-text-muted mt-2 leading-relaxed">
-                "We noticed you spend <strong className="text-theme-text-base">24% more</strong> on weekends via food apps. A soft ceiling on Saturdays would preserve ~₹3,500/mo."
+              <p className="text-xs opacity-50 mt-0.5">
+                Real-time classification via Tiered Engine
               </p>
-
-              <div className="mt-5 flex items-center gap-2">
-                <button
-                  onClick={() => setAppliedStrategy(!appliedStrategy)}
-                  className="px-4 py-2 rounded-xl text-xs font-semibold bg-theme-primary text-white hover:opacity-90 transition-opacity flex items-center gap-1.5 shadow-md"
-                >
-                  {appliedStrategy ? (
-                    <>
-                      <CheckCircle2 size={14} />
-                      Strategy Active
-                    </>
-                  ) : (
-                    <>
-                      Apply Weekend Ceiling
-                      <ArrowUpRight size={14} />
-                    </>
-                  )}
-                </button>
-                <button
-                  onClick={() => alert("Insight snoozed for 14 days.")}
-                  className="px-3 py-2 rounded-xl text-xs font-medium text-theme-text-muted hover:text-theme-text-base hover:bg-theme-surface transition-colors"
-                >
-                  Dismiss
-                </button>
-              </div>
-
-              {appliedStrategy && (
-                <div className="mt-3 p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-[11px] text-emerald-400 flex items-center gap-2">
-                  <CheckCircle2 size={14} className="shrink-0" />
-                  <span>Saturday ₹1,500 spending alert threshold configured.</span>
-                </div>
-              )}
             </div>
-
-            {/* Local Bank Statement Upload Dropzone */}
-            <div className="p-6 rounded-3xl border border-theme-border bg-theme-card shadow-sm space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <UploadCloud size={18} className="text-theme-primary" />
-                  <h3 className="text-sm font-bold">Local Statement Ingest</h3>
-                </div>
-                <span className="text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
-                  On-Device OCR
-                </span>
-              </div>
-
-              {/* Upload Drop area */}
-              <div
-                onClick={handleSimulateUpload}
-                className="border-2 border-dashed border-theme-border hover:border-theme-primary/60 rounded-2xl p-6 text-center transition-colors cursor-pointer bg-theme-surface/40 hover:bg-theme-surface relative overflow-hidden group"
-              >
-                {isUploading && (
-                  <div className="absolute inset-x-0 h-1 bg-theme-primary animate-scan z-10 top-0 shadow-lg" />
-                )}
-
-                <div className="flex flex-col items-center gap-2">
-                  <div className="w-12 h-12 rounded-2xl bg-theme-primary/10 text-theme-primary flex items-center justify-center group-hover:scale-110 transition-transform">
-                    {isUploading ? (
-                      <Zap size={22} className="animate-spin text-theme-primary" />
-                    ) : (
-                      <FileText size={22} />
-                    )}
-                  </div>
-                  {isUploading ? (
-                    <div>
-                      <span className="text-xs font-semibold text-theme-primary">
-                        Scanning statement locally...
-                      </span>
-                      <p className="text-[11px] text-theme-text-muted mt-0.5">
-                        Tokenizing PDF tables & masking PII
-                      </p>
-                    </div>
-                  ) : (
-                    <div>
-                      <span className="text-xs font-semibold">
-                        Drop Bank PDF / CSV or Click to Browse
-                      </span>
-                      <p className="text-[11px] text-theme-text-muted mt-0.5">
-                        Supports HDFC, ICICI, SBI, Axis, Kotak statements
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Engine Breakdown stats */}
-              <div className="pt-2 space-y-2 border-t border-theme-border text-xs">
-                <div className="flex justify-between text-theme-text-muted">
-                  <span>Engine Speed:</span>
-                  <span className="font-num text-theme-text-base">142 txns/sec</span>
-                </div>
-                <div className="flex justify-between text-theme-text-muted">
-                  <span>Tier 1 Regex Match Rate:</span>
-                  <span className="font-num text-emerald-500 font-medium">62% (0 tokens)</span>
-                </div>
-                <div className="flex justify-between text-theme-text-muted">
-                  <span>Tier 3 LLM Disambiguation:</span>
-                  <span className="font-num text-purple-400 font-medium">14% (Batched)</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Quick Rule Creator Simulator */}
-            <div className="p-4 rounded-2xl border border-theme-border bg-theme-surface/40 text-xs flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-lg bg-theme-primary/15 text-theme-primary">
-                  <CreditCard size={16} />
-                </div>
-                <div>
-                  <div className="font-semibold">Copilot Rule Dispatcher</div>
-                  <div className="text-[11px] text-theme-text-muted">
-                    "Always mark Swiggy as Food & Dining"
-                  </div>
-                </div>
-              </div>
-              <ChevronRight size={16} className="text-theme-text-muted" />
-            </div>
+            <button
+              onClick={() => alert("Viewing all 48 transactions")}
+              className="text-xs uppercase tracking-wider font-bold opacity-60 hover:opacity-100 transition-opacity"
+            >
+              View All &rarr;
+            </button>
           </div>
-        </section>
-      </main>
 
-      {/* Transaction Detail & AI Engine Inspector Modal */}
-      {selectedTxn && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="w-full max-w-lg rounded-3xl border border-theme-border bg-theme-card p-6 shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-200">
-            {/* Header */}
-            <div className="flex items-start justify-between">
-              <div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-theme-primary">
-                  {selectedTxn.tier}
-                </span>
-                <h3 className="text-xl font-bold mt-0.5">{selectedTxn.cleanMerchant}</h3>
-                <p className="text-xs text-theme-text-muted">{selectedTxn.date}</p>
-              </div>
-              <button
-                onClick={() => setSelectedTxn(null)}
-                className="p-1.5 rounded-full hover:bg-theme-surface text-theme-text-muted hover:text-theme-text-base transition-colors"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            {/* Amount & Classification */}
-            <div className="p-4 rounded-2xl bg-theme-surface border border-theme-border flex items-center justify-between">
-              <div>
-                <span className="text-xs text-theme-text-muted">Signed Amount</span>
-                <div className="text-2xl font-bold font-num">
-                  ₹{Math.abs(selectedTxn.amount).toLocaleString('en-IN')}
-                </div>
-              </div>
-              <span className={`text-xs font-semibold px-3 py-1 rounded-xl border ${selectedTxn.categoryColor}`}>
-                {selectedTxn.category}
-              </span>
-            </div>
-
-            {/* AI Decision Pipeline */}
-            <div className="space-y-3">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-theme-text-muted">
-                Pipeline Decision Log
-              </h4>
-
-              <div className="p-3.5 rounded-xl bg-theme-surface/70 border border-theme-border text-xs space-y-2">
-                <div>
-                  <span className="text-theme-text-muted block text-[11px]">Raw Bank String:</span>
-                  <code className="text-theme-primary font-mono text-[11px] block mt-0.5 bg-black/20 p-1.5 rounded border border-white/5 break-all">
-                    {selectedTxn.rawDescription}
-                  </code>
-                </div>
-
-                <div className="pt-2 border-t border-theme-border/50">
-                  <span className="text-theme-text-muted block text-[11px]">Engine Explanation:</span>
-                  <p className="mt-1 text-theme-text-base leading-relaxed">
-                    {selectedTxn.engineNote}
-                  </p>
-                </div>
-
-                <div className="pt-2 border-t border-theme-border/50 flex items-center justify-between text-[11px]">
-                  <span className="text-theme-text-muted">Model Confidence:</span>
-                  <span className="font-semibold text-emerald-400 font-num">{selectedTxn.confidence}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Action buttons */}
-            <div className="flex items-center gap-3 pt-2">
-              <button
-                onClick={() => {
-                  alert(`Created custom rule: Always assign "${selectedTxn.cleanMerchant}" to ${selectedTxn.category}`);
-                  setSelectedTxn(null);
-                }}
-                className="flex-1 py-2.5 rounded-xl text-xs font-semibold bg-theme-primary text-white hover:opacity-95 transition-opacity text-center shadow-md"
-              >
-                Save as Classification Rule
-              </button>
-              <button
-                onClick={() => setSelectedTxn(null)}
-                className="py-2.5 px-4 rounded-xl text-xs font-medium border border-theme-border bg-theme-surface hover:bg-theme-surface-hover text-theme-text-muted hover:text-theme-text-base"
-              >
-                Close
-              </button>
-            </div>
+          <div className="space-y-3">
+            {transactions.map((tx) => (
+              <TxRow
+                key={tx.id}
+                name={tx.name}
+                subtitle={tx.subtitle}
+                cat={tx.cat}
+                price={tx.price}
+                tier={tx.tier}
+                isDebit={tx.isDebit}
+                privacy={privacyMode}
+                theme={theme}
+                s={s}
+              />
+            ))}
           </div>
         </div>
-      )}
+
+        {/* 4. THEMATIC BOUTIQUE MINI CARD */}
+        <div
+          className={`col-span-12 lg:col-span-5 ${s.card} ${s.cardHover} border p-6 sm:p-8 rounded-[2rem] flex flex-col items-center justify-center text-center relative overflow-hidden transition-all duration-300`}
+        >
+          {theme === 'cat' ? (
+            <div className="py-4 space-y-4 max-w-xs animate-in fade-in zoom-in-95 duration-300">
+              <div className="w-20 h-20 bg-[#6B46C1]/15 text-[#6B46C1] rounded-3xl flex items-center justify-center mx-auto text-4xl shadow-inner shadow-[#6B46C1]/20">
+                🐱
+              </div>
+              <h4 className="text-lg font-bold text-[#6B46C1]">Neko Vault Status</h4>
+              <p className="italic opacity-80 text-sm leading-relaxed font-quicksand">
+                "Meow-ney well spent! Your savings are growing like a well-fed kitty."
+              </p>
+              <div className="pt-2 flex justify-center gap-1.5 text-xs text-[#6B46C1]">
+                <Heart size={14} className="fill-[#6B46C1]" />
+                <span className="font-semibold">Purr-fect Budgeting</span>
+              </div>
+            </div>
+          ) : theme === 'cozy' ? (
+            <div className="py-4 space-y-4 max-w-xs animate-in fade-in zoom-in-95 duration-300">
+              <div className="w-20 h-20 bg-[#800000]/15 text-[#800000] rounded-3xl flex items-center justify-center mx-auto text-4xl shadow-inner shadow-[#800000]/20">
+                🎄
+              </div>
+              <h4 className="text-lg font-bold text-[#800000] font-playfair italic">
+                Cozy Hearth Wisdom
+              </h4>
+              <p className="italic opacity-80 text-sm leading-relaxed font-playfair">
+                "Warmth is in the budget. You saved enough for a nice gift today."
+              </p>
+              <div className="pt-2 text-xs text-[#800000] font-semibold flex items-center justify-center gap-1">
+                <span>Hot Cocoa Reserve:</span>
+                <span className="font-bold underline">₹3,400</span>
+              </div>
+            </div>
+          ) : theme === 'stealth' ? (
+            <div className="py-4 space-y-4 max-w-xs animate-in fade-in zoom-in-95 duration-300 text-left w-full">
+              <div className="flex items-center gap-2 text-[#00FF94] text-xs font-mono font-bold tracking-widest uppercase">
+                <div className="w-2 h-2 rounded-full bg-[#00FF94] animate-ping" />
+                <span>Zero-Trace Encryption</span>
+              </div>
+              <div className="p-3.5 rounded-xl bg-black/40 border border-white/10 text-xs font-mono space-y-1.5">
+                <div className="text-zinc-500">// Vault Status</div>
+                <div className="text-white">Local-First Storage: <span className="text-[#00FF94]">ACTIVE</span></div>
+                <div className="text-white">Cloud Egress: <span className="text-[#00FF94]">0.00 KB</span></div>
+                <div className="text-white">Hash: <span className="text-zinc-400">sha256:d89a...7c</span></div>
+              </div>
+              <p className="text-xs font-mono text-zinc-400">
+                Hardware-level encryption active on all local SQLite statement records.
+              </p>
+            </div>
+          ) : (
+            <div className="py-4 space-y-4 max-w-xs animate-in fade-in zoom-in-95 duration-300">
+              <div className="w-16 h-16 bg-zinc-100 rounded-2xl flex items-center justify-center mx-auto text-zinc-800">
+                <Layers size={28} />
+              </div>
+              <h4 className="text-base font-bold text-zinc-900">Clean Editorial Ledger</h4>
+              <p className="text-xs text-zinc-600 leading-relaxed">
+                Balanced typography crafted for dense financial statements with zero visual clutter.
+              </p>
+              <div className="pt-1 text-[11px] text-zinc-400 font-mono">
+                System Font: Inter + SF Mono
+              </div>
+            </div>
+          )}
+        </div>
+
+      </main>
     </div>
   );
-}
+};
+
+// UI COMPONENTS
+const ThemeBtn = ({ label, icon, active, onClick, color }) => (
+  <button
+    onClick={onClick}
+    className={`p-2 rounded-xl transition-all duration-300 flex items-center gap-1.5 text-xs font-medium ${
+      active
+        ? `${color} shadow-md scale-105`
+        : 'hover:bg-black/5 dark:hover:bg-white/5 opacity-60 hover:opacity-100'
+    }`}
+    title={`Switch to ${label} Theme`}
+  >
+    {icon}
+    <span className="hidden md:inline font-semibold">{label}</span>
+  </button>
+);
+
+const TxRow = ({ name, subtitle, cat, price, tier, isDebit, privacy, theme, s }) => (
+  <div className="flex items-center justify-between p-3.5 rounded-2xl hover:bg-black/[0.03] dark:hover:bg-white/[0.04] transition-colors group cursor-pointer border border-transparent hover:border-black/5 dark:hover:border-white/5">
+    <div className="flex items-center gap-3.5">
+      <div
+        className={`w-10 h-10 rounded-2xl flex items-center justify-center text-xs font-bold shrink-0 transition-transform duration-200 group-hover:scale-105 ${
+          theme === 'stealth'
+            ? 'bg-zinc-800/80 text-[#00FF94] border border-white/10'
+            : 'bg-black/5 dark:bg-white/10'
+        }`}
+      >
+        {name[0]}
+      </div>
+      <div>
+        <div className="flex items-center gap-2">
+          <p
+            className={`font-semibold text-sm ${
+              theme === 'stealth' ? 'text-white' : ''
+            }`}
+          >
+            {name}
+          </p>
+          <span className="text-[10px] opacity-50 hidden sm:inline">• {cat}</span>
+        </div>
+        <p className="text-xs opacity-50 font-sans mt-0.5">{tier}</p>
+      </div>
+    </div>
+
+    <div className="text-right">
+      <p
+        className={`font-bold text-sm sm:text-base ${s.mono} ${
+          privacy ? 'filter blur-md hover:blur-none select-none transition-all' : ''
+        } ${!isDebit ? 'text-emerald-500' : theme === 'stealth' ? 'text-[#00FF94]' : ''}`}
+        title={privacy ? 'Hover to reveal' : ''}
+      >
+        {isDebit ? `-${price}` : `+${price}`}
+      </p>
+      <span className="text-[10px] opacity-40 hidden sm:block">Verified</span>
+    </div>
+  </div>
+);
+
+export default App;
