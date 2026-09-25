@@ -50,7 +50,8 @@ Choose the best categoryId and provide a confidence score between 0.0 and 1.0. A
         tags: result.tags,
       };
     } catch (error) {
-      this.logger.error(`LLM Classification failed for txn ${txn.id}:`, error);
+      const txnIdentifier = txn.id || txn.description || 'unidentified';
+      this.logger.error(`LLM Classification failed for txn ${txnIdentifier}:`, error);
       return null;
     }
   }
