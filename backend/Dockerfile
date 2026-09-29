@@ -45,4 +45,4 @@ USER node
 EXPOSE 3001
 
 ENTRYPOINT ["/usr/bin/dumb-init", "--"]
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/src/main.js"]
+CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main.js"]

@@ -4,7 +4,7 @@
   "description": "Kitna Kharcha 2.0 — Privacy-First AI Finance Intelligence Backend",
   "scripts": {
     "build": "nest build",
-    "start": "node dist/src/main.js",
+    "start": "node dist/main.js",
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
     "test": "vitest run",
