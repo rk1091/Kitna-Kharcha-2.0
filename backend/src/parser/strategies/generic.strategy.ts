@@ -167,11 +167,12 @@ export class GenericStrategy implements BankParserStrategy {
     let explicitBalance: number | undefined;
     const balRegex = /(?:available\s*balance|avail\s*bal|avl\s*bal|closing\s*balance|closing\s*bal|balance|bal)[\s.:]*(?:(?:₹|Rs\.?|INR|\$)\s*)?([0-9]{1,3}(?:,[0-9]{2,3})*(?:\.[0-9]{1,2})?|[0-9]+(?:\.[0-9]{1,2})?)/i;
     const balMatch = workingLine.match(balRegex);
-    if (balMatch) {
+    if (balMatch && balMatch.index !== undefined) {
       const parsed = parseFloat(balMatch[1].replace(/,/g, ''));
       if (!isNaN(parsed) && parsed >= 0) {
         explicitBalance = parsed;
-        workingLine = workingLine.substring(0, balMatch.index) + ' ' + workingLine.substring(balMatch.index + balMatch[0].length);
+        const matchIdx = balMatch.index;
+        workingLine = workingLine.substring(0, matchIdx) + ' ' + workingLine.substring(matchIdx + balMatch[0].length);
       }
     }
 
