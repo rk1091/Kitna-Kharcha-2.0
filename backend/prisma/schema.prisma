@@ -23,6 +23,7 @@ model User {
   budgets         Budget[]
   copilotSessions CopilotSession[]
   merchants       UserMerchant[]
+  llmLogs         LlmLog[]
 }
 
 model StatementUpload {
@@ -95,6 +96,7 @@ model Transaction {
   duplicateOfId            String?
   recurringGroupId         String?
   tags                     String[]             @default([])
+  fingerprint              String?
 
   createdAt                DateTime             @default(now())
   updatedAt                DateTime             @updatedAt
@@ -104,6 +106,7 @@ model Transaction {
   @@index([txnDate])
   @@index([merchantId])
   @@index([recurringGroupId])
+  @@index([fingerprint])
 }
 
 enum Direction {
@@ -252,3 +255,25 @@ enum LogLevel {
   ERROR
   DEBUG
 }
+
+model LlmLog {
+  id               String    @id @default(cuid())
+  userId           String?
+  user             User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  operation        String
+  model            String
+  promptTokens     Int       @default(0)
+  completionTokens Int       @default(0)
+  totalTokens      Int       @default(0)
+  latencyMs        Int       @default(0)
+  estimatedCostUsd Float     @default(0.0)
+  toolCalls        String?
+  isSuccess        Boolean   @default(true)
+  errorMessage     String?
+  createdAt        DateTime  @default(now())
+
+  @@index([userId])
+  @@index([operation])
+  @@index([createdAt])
+}
+
