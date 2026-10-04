@@ -48,7 +48,7 @@ export class RuleEngineService {
       const fieldName = (conditions as any).field;
       const targetVal = String((conditions as any).value).toLowerCase().trim();
       const rawVal = String((txn as any)[fieldName] || '').toLowerCase().trim();
-      const op = (conditions as any).operator || 'contains';
+      const op = String((conditions as any).operator || 'contains').toLowerCase();
 
       if (op === 'equals') {
         if (rawVal !== targetVal && !desc.includes(targetVal) && !normalizedDesc.includes(targetVal)) {

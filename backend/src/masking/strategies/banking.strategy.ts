@@ -20,9 +20,9 @@ export class BankingStrategy implements MaskingStrategy {
       });
     }
 
-    // Balance regex: looking for Rs, INR, balance, available
+    // Balance regex: looking for Rs, INR, balance, available (on the same line)
     // e.g., Available balance is Rs 5000.00
-    const balanceRegex = /(?:balance|bal|avl bal|available)[\s.:]*(?:rs|inr|₹)?[\s]*([\d,]+(?:\.\d{1,2})?)/gi;
+    const balanceRegex = /(?:balance|bal|avl\s*bal|available)[^\S\r\n.:]*(?:rs|inr|₹)?[^\S\r\n]*([\d,]+(?:\.\d{1,2})?)/gi;
     while ((match = balanceRegex.exec(text)) !== null) {
       const valueIndex = match[0].indexOf(match[1]);
       matches.push({
@@ -52,8 +52,8 @@ export class BankingStrategy implements MaskingStrategy {
       }
     }
 
-    // Credit Limit regex
-    const limitRegex = /(?:credit limit|cr limit|available credit|limit)[\s.:]*(?:rs|inr)?[\s]*([\d,]+(?:\.\d{1,2})?)/gi;
+    // Credit Limit regex (on the same line)
+    const limitRegex = /(?:credit limit|cr limit|available credit|limit)[^\S\r\n.:]*(?:rs|inr)?[^\S\r\n]*([\d,]+(?:\.\d{1,2})?)/gi;
     while ((match = limitRegex.exec(text)) !== null) {
       const valueIndex = match[0].indexOf(match[1]);
       matches.push({

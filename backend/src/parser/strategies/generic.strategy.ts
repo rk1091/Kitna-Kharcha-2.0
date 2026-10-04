@@ -59,9 +59,11 @@ export class GenericStrategy implements BankParserStrategy {
 
   private isHeaderOrNoise(line: string): boolean {
     const lower = line.toLowerCase();
+    
+    // If the line is an actual transaction SMS / alert, don't drop it as noise
+    const isTransactionAlert = /\b(debited|credited|paid\s+to|transferred|withdrawn|spent)\b/i.test(line);
+
     const noiseKeywords = [
-      'opening balance',
-      'closing balance',
       'statement of account',
       'account statement',
       'page ',
@@ -70,6 +72,10 @@ export class GenericStrategy implements BankParserStrategy {
       'total credit',
     ];
     if (noiseKeywords.some(kw => lower.includes(kw))) {
+      return true;
+    }
+
+    if (!isTransactionAlert && /^(?:opening|closing)\s*balance/i.test(lower.trim())) {
       return true;
     }
 
@@ -140,24 +146,76 @@ export class GenericStrategy implements BankParserStrategy {
     line: string,
     dateInfo: { date: Date; raw: string; index: number },
   ): ParsedTransaction | null {
-    // Remove the date string from the line to inspect the rest
+    // 1. Remove the primary date from line
     const beforeDate = line.substring(0, dateInfo.index).trim();
     const afterDate = line.substring(dateInfo.index + dateInfo.raw.length).trim();
-    const remainingLine = `${beforeDate} ${afterDate}`.trim();
+    let workingLine = `${beforeDate} ${afterDate}`.trim();
 
-    // Look for monetary amounts: numbers with optional commas and 2 decimal places
-    // Matches e.g. "1,500.00", "5000", "75,000.50"
-    const amountRegex = /(?:₹|Rs\.?|\$)?\s*([0-9]{1,3}(?:,[0-9]{2,3})*(?:\.[0-9]{1,2})|[0-9]+(?:\.[0-9]{1,2})?)/g;
-    const amountMatches: { value: number; raw: string; index: number }[] = [];
+    // 2. Remove secondary dates (e.g. Value Date)
+    const dmyRegex = /\b[0-3]?\d[\/\-\.][0-1]?\d[\/\-\.]\d{2,4}\b/g;
+    const dMonYRegex = /\b[0-3]?\d[\s\-](?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*[\s\-]\d{2,4}\b/gi;
+    const ymdRegex = /\b\d{4}[\/\-][0-1]?\d[\/\-][0-3]?\d\b/g;
+    workingLine = workingLine
+      .replace(dmyRegex, ' ')
+      .replace(dMonYRegex, ' ')
+      .replace(ymdRegex, ' ');
+
+    // 3. Remove timestamps (e.g. 14:32:05)
+    workingLine = workingLine.replace(/\b\d{1,2}:\d{2}(?::\d{2}(?:\.\d{1,3})?)?\s*(?:AM|PM|am|pm)?\b/g, ' ');
+
+    // 4. Extract explicit balance if labeled (e.g. Bal: Rs 25,000, Avail Bal: 15,200.50)
+    let explicitBalance: number | undefined;
+    const balRegex = /(?:available\s*balance|avail\s*bal|avl\s*bal|closing\s*balance|closing\s*bal|balance|bal)[\s.:]*(?:(?:₹|Rs\.?|INR|\$)\s*)?([0-9]{1,3}(?:,[0-9]{2,3})*(?:\.[0-9]{1,2})?|[0-9]+(?:\.[0-9]{1,2})?)/i;
+    const balMatch = workingLine.match(balRegex);
+    if (balMatch) {
+      const parsed = parseFloat(balMatch[1].replace(/,/g, ''));
+      if (!isNaN(parsed) && parsed >= 0) {
+        explicitBalance = parsed;
+        workingLine = workingLine.substring(0, balMatch.index) + ' ' + workingLine.substring(balMatch.index + balMatch[0].length);
+      }
+    }
+
+    // 5. Strip account/card numbers (e.g. A/c ending 1234, A/c *1234, Card 4321, XX1234)
+    workingLine = workingLine.replace(/(?:a\/c|account|acct|card|ending|ending\s*in)[\s.:#*-]*[X*]*\d{3,6}\b/gi, ' ');
+    workingLine = workingLine.replace(/\b[X*]{2,}\d{3,6}\b/gi, ' ');
+
+    // 6. Strip labeled reference numbers, cheque numbers, order numbers
+    workingLine = workingLine.replace(/(?:ref|reference|utr|rrn|chq|cheque|txn|transaction|order|invoice|id|no)[\s.:#-]*([0-9]{4,20})\b/gi, ' ');
+
+    // 7. Strip UPI / banking transaction prefixes with references
+    workingLine = workingLine.replace(/\b(?:UPI|IMPS|NEFT|RTGS|POS|INB|BIL|MOB)[/-](?:(?:CR|DR)[/-])?/gi, ' ');
+    workingLine = workingLine.replace(/\b(?:POS|CHQ|REF|TXN)\s+[0-9]{4,16}\b/gi, ' ');
+
+    // 8. Strip standalone long numeric sequences (>= 9 digits: core banking refs, UTR, phone)
+    workingLine = workingLine.replace(/\b\d{9,20}\b/g, ' ');
+
+    // 9. Determine transaction direction
+    let type: TransactionType = 'DEBIT';
+    const isSalaryOrPayroll = /\b(?:salary|payroll|monthly\s*pay|sal\s*credit|accenture|tcs|infosys|wipro|cognizant|google|microsoft|amazon\s*dev)\b/i.test(line);
+    const isIncomeKeyword = /\b(?:refund|cashback|reversal|interest\s*credit|dividend|credited|deposit|received\s*from)\b/i.test(line);
+    const hasExplicitCredit = /(?<!credit\s+card|upi\/|card\s+)\b(CR|CREDIT)\b(?!\s*card)/i.test(workingLine);
+    const hasExplicitDebit = /(?<!\w)(DR|DEBIT|debited|paid\s+to|spent\s+on|transferred\s+to|sent\s+to|withdrawal)\b/i.test(workingLine);
+
+    if (hasExplicitCredit || isSalaryOrPayroll || isIncomeKeyword) {
+      type = 'CREDIT';
+    } else if (hasExplicitDebit) {
+      type = 'DEBIT';
+    }
+
+    // 10. Extract candidate amounts with improved Indian and international comma support
+    const amountRegex = /(?:(₹|Rs\.?|INR|\$)\s*)?([0-9]{1,3}(?:,[0-9]{2,3})+(?:\.[0-9]{1,2})?|[0-9]+(?:\.[0-9]{1,2})?)/gi;
+    const amountMatches: { value: number; raw: string; hasCurr: boolean; hasDec: boolean; index: number }[] = [];
     let m: RegExpExecArray | null;
 
-    while ((m = amountRegex.exec(remainingLine)) !== null) {
-      const cleaned = m[1].replace(/,/g, '');
+    while ((m = amountRegex.exec(workingLine)) !== null) {
+      const cleaned = m[2].replace(/,/g, '');
       const num = parseFloat(cleaned);
       if (!isNaN(num) && num > 0) {
         amountMatches.push({
           value: num,
           raw: m[0],
+          hasCurr: !!m[1],
+          hasDec: m[2].includes('.'),
           index: m.index,
         });
       }
@@ -167,49 +225,46 @@ export class GenericStrategy implements BankParserStrategy {
       return null;
     }
 
-    // Determine type: CR / DR indicator, salary/credit keywords, or column position
-    let type: TransactionType = 'DEBIT';
-    const upperRemaining = remainingLine.toUpperCase();
-
-    const hasExplicitCredit = /\b(CR|CREDIT)\b/i.test(upperRemaining);
-    const hasExplicitDebit = /\b(DR|DEBIT)\b/i.test(upperRemaining);
-
-    // Deterministic salary and credit pattern detection
-    const isSalaryOrPayroll = /\b(?:salary|payroll|monthly\s*pay|sal\s*credit|accenture|tcs|infosys|wipro|cognizant|google|microsoft|amazon\s*dev)\b/i.test(remainingLine);
-    const isIncomeKeyword = /\b(?:refund|cashback|reversal|interest\s*credit|dividend)\b/i.test(remainingLine);
-
-    if (hasExplicitCredit) {
-      type = 'CREDIT';
-    } else if (hasExplicitDebit) {
-      type = 'DEBIT';
-    } else if (isSalaryOrPayroll || isIncomeKeyword) {
-      type = 'CREDIT';
-    } else {
-      type = 'DEBIT';
+    // Filter out stray 4-digit years (e.g. 2024..2035) if other real candidates exist
+    let candidates = amountMatches;
+    if (candidates.length > 1) {
+      const nonYearCandidates = candidates.filter(c => !(c.value >= 2020 && c.value <= 2035 && !c.hasDec && !c.hasCurr));
+      if (nonYearCandidates.length > 0) {
+        candidates = nonYearCandidates;
+      }
     }
 
-    let amount = amountMatches[0].value;
-    let balance: number | undefined;
+    let amount = 0;
+    let balance = explicitBalance;
 
-    // If multiple amounts are detected:
-    // Case 1: [Amount, Balance]
-    if (amountMatches.length === 2) {
-      amount = amountMatches[0].value;
-      balance = amountMatches[1].value;
-    } 
-    // Case 2: [Debit, Credit, Balance] or [Withdrawal, Deposit, Balance]
-    else if (amountMatches.length >= 3) {
-      // If explicit credit, amount is usually second
-      if (type === 'CREDIT') {
-        amount = amountMatches[1].value;
+    if (explicitBalance !== undefined) {
+      // Balance was already explicitly identified; pick amount from remaining candidates
+      const currMatch = candidates.find(c => c.hasCurr);
+      const decMatch = candidates.find(c => c.hasDec);
+      amount = (currMatch || decMatch || candidates[0]).value;
+    } else if (candidates.length === 1) {
+      amount = candidates[0].value;
+    } else if (candidates.length === 2) {
+      // Check if one has currency symbol
+      if (candidates[0].hasCurr && !candidates[1].hasCurr) {
+        amount = candidates[0].value;
+        balance = candidates[1].value;
       } else {
-        amount = amountMatches[0].value;
+        // Standard bank statement [Withdrawal/Deposit Amount, Running Balance]
+        amount = candidates[0].value;
+        balance = candidates[1].value;
       }
-      balance = amountMatches[amountMatches.length - 1].value;
+    } else {
+      // 3 or more candidates: rightmost is running balance
+      balance = candidates[candidates.length - 1].value;
+      const amountCandidates = candidates.slice(0, candidates.length - 1);
+      const currMatch = amountCandidates.find(c => c.hasCurr);
+      const decMatch = amountCandidates.find(c => c.hasDec);
+      amount = (currMatch || decMatch || amountCandidates[amountCandidates.length - 1]).value;
     }
 
     // Extract description by removing amounts and CR/DR flags
-    let description = remainingLine;
+    let description = workingLine;
     for (const am of amountMatches) {
       description = description.replace(am.raw, ' ');
     }

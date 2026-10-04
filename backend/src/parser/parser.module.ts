@@ -10,12 +10,12 @@ import { LLMModule } from '../llm/llm.module';
 @Module({
   imports: [LLMModule],
   providers: [
-    ParserService,
-    LlmFallbackStrategy,
+    MerchantNormalizer,
+    GenericStrategy,
     HdfcStrategy,
     SbiStrategy,
-    GenericStrategy,
-    MerchantNormalizer,
+    LlmFallbackStrategy,
+    ParserService,
   ],
   exports: [ParserService],
 })

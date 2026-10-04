@@ -5,11 +5,11 @@ import { z } from 'zod';
 
 const TransactionSchema = z.object({
   date: z.string().describe('ISO 8601 format WITH EXACT TIME. Parse HH:MM from the text and combine with date (e.g. 2026-05-15T19:14:00.000Z). Default 00:00:00 if missing.'),
-  amount: z.number(),
+  amount: z.number().describe('The actual positive transaction amount (withdrawal/deposit). Do NOT extract running balance, cheque numbers, account numbers, or reference IDs.'),
   type: z.enum(['CREDIT', 'DEBIT']),
   description: z.string(),
   merchantName: z.string().describe('Highly cleaned merchant name. E.g. RAZ*SWIGGYBengaluru -> Swiggy. WWW DINEOUT CO IN -> Dineout. EMINYKAA -> Nykaa. Remove locations, gateways, and domains.'),
-  balance: z.number().optional(),
+  balance: z.number().optional().describe('The running account balance after this transaction if shown.'),
 });
 
 const ParseResultSchema = z.object({
